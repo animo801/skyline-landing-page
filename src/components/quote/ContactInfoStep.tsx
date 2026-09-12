@@ -16,8 +16,23 @@ function isValidPhone(phone: string) {
   return phone.replace(/\D/g, '').length >= 10;
 }
 
+// Formats digits as the user types into (xxx) xxx-xxxx, growing the mask
+// as more digits come in rather than requiring all 10 up front.
+function formatPhoneNumber(value: string): string {
+  const digits = value.replace(/\D/g, '').slice(0, 10);
+
+  if (digits.length === 0) return '';
+  if (digits.length <= 3) return `(${digits}`;
+  if (digits.length <= 6) {
+    return `(${digits.slice(0, 3)}) ${digits.slice(3)}`;
+  }
+  return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`;
+}
+
 const inputClasses =
-  'h-14 w-full rounded-lg bg-[#f0f0f0] px-4 text-lg font-bold text-[#111] outline-none placeholder:font-normal placeholder:text-black/40 focus:ring-2 focus:ring-skyline-blue';
+  'h-14 w-full rounded-lg bg-[#f0f0f0] px-4 text-lg font-bold text-[#111] outline-none focus:ring-2 focus:ring-skyline-blue';
+
+const labelClasses = 'mb-1 block text-base font-bold text-black/70';
 
 export default function ContactInfoStep({
   defaultValue,
@@ -28,7 +43,9 @@ export default function ContactInfoStep({
 }) {
   const [firstName, setFirstName] = useState(defaultValue?.firstName ?? '');
   const [email, setEmail] = useState(defaultValue?.email ?? '');
-  const [phone, setPhone] = useState(defaultValue?.phone ?? '');
+  const [phone, setPhone] = useState(() =>
+    formatPhoneNumber(defaultValue?.phone ?? '')
+  );
   const [touched, setTouched] = useState(false);
 
   const isFirstNameValid = firstName.trim().length > 0;
@@ -60,13 +77,15 @@ export default function ContactInfoStep({
         className='mt-6 flex flex-col gap-4'
       >
         <div>
+          <label htmlFor='firstName' className={labelClasses}>
+            First name
+          </label>
           <input
+            id='firstName'
             type='text'
             autoComplete='given-name'
-            placeholder='First name'
             value={firstName}
             onChange={(event) => setFirstName(event.target.value)}
-            aria-label='First name'
             className={inputClasses}
           />
           {touched && !isFirstNameValid && (
@@ -77,13 +96,15 @@ export default function ContactInfoStep({
         </div>
 
         <div>
+          <label htmlFor='email' className={labelClasses}>
+            Email address
+          </label>
           <input
+            id='email'
             type='email'
             autoComplete='email'
-            placeholder='Email address'
             value={email}
             onChange={(event) => setEmail(event.target.value)}
-            aria-label='Email address'
             className={inputClasses}
           />
           {touched && !isEmailValid && (
@@ -94,14 +115,16 @@ export default function ContactInfoStep({
         </div>
 
         <div>
+          <label htmlFor='phone' className={labelClasses}>
+            Phone number
+          </label>
           <input
+            id='phone'
             type='tel'
             inputMode='tel'
             autoComplete='tel'
-            placeholder='Phone number'
             value={phone}
-            onChange={(event) => setPhone(event.target.value)}
-            aria-label='Phone number'
+            onChange={(event) => setPhone(formatPhoneNumber(event.target.value))}
             className={inputClasses}
           />
           {touched && !isPhoneValid && (
@@ -113,7 +136,7 @@ export default function ContactInfoStep({
 
         <button
           type='submit'
-          className='mt-2 h-14 w-full bg-skyline-navy text-lg font-bold text-white transition-colors hover:bg-skyline-navy/90'
+          className='mt-2 h-14 w-full bg-skyline-navy text-base font-bold text-white transition-colors hover:bg-skyline-navy/90'
         >
           Get my free quote
         </button>

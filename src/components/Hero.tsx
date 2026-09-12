@@ -37,11 +37,14 @@ export default function Hero() {
       {/* Content panel: sits in normal flow below the image on mobile (so it
           can grow past the image's bottom edge), full split panel beside the
           image on desktop. */}
-      <div className='relative z-10 mt-[-36vh] mr-12 bg-skyline-blue py-8 pl-6 pr-10 shadow-2xl sm:mr-8 sm:py-10 sm:pl-8 sm:pr-12 md:mt-0 md:mr-0 md:flex md:w-1/2 md:flex-col md:justify-center md:px-16 md:py-12 md:shadow-none lg:px-20'>
+      <div className='relative z-10 mt-[-36vh] mr-6 bg-skyline-blue py-8 pl-6 pr-6 shadow-2xl sm:mr-2 sm:py-10 sm:pl-8 sm:pr-8 md:mt-0 md:mr-0 md:flex md:w-1/2 md:flex-col md:justify-center md:px-16 md:py-12 md:shadow-none lg:px-20'>
         <div className='mx-auto w-full max-w-md md:mx-0 md:max-w-4xl lg:max-w-6xl'>
-          <h1 className='text-[30px] leading-[1.15] font-black text-white sm:text-4xl md:text-5xl lg:text-[62px]'>
+          <h1 className='text-[30px] leading-[1] font-black text-white sm:text-4xl md:text-5xl lg:text-[62px]'>
             Get your{' '}
-            <span className='bg-skyline-navy box-decoration-clone px-1'>
+            {/* Single-color vertical band: transparent top/bottom, hard-cut
+                to fully opaque skyline-navy for the middle 70% — no fade,
+                just a sharp edge at 15%/85%. */}
+            <span className='bg-[linear-gradient(to_bottom,transparent_0%,transparent_15%,var(--color-skyline-navy)_15%,var(--color-skyline-navy)_85%,transparent_85%,transparent_100%)] box-decoration-clone px-1'>
               free quote
             </span>{' '}
             for permanent Christmas lights

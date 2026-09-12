@@ -11,19 +11,23 @@ import type { Timeline } from './TimelineStep';
 import ContactInfoStep from './ContactInfoStep';
 import type { ContactInfo } from './ContactInfoStep';
 import ThankYouStep from './ThankYouStep';
+import OutOfAreaStep from './OutOfAreaStep';
+import { isZipInServiceArea } from '@/data/serviceAreaZipCodes';
 
-// Percent-filled matches each step's Figma frame — every designed step so
-// far shows the same 34px-of-354px filled segment. The final thank-you
-// screen fills the bar all the way since the questionnaire is complete.
-const STEP_PROGRESS_PERCENT = [
-  (34 / 354) * 100,
-  (34 / 354) * 100,
-  (34 / 354) * 100,
-  (34 / 354) * 100,
-  100,
-];
+// 5 states: 4 questions (steps 0-3) plus the thank-you screen (step 4).
+// Progress reflects how many questions have been answered so far, so it
+// fills from empty at the first question to full once the quiz is done.
+const TOTAL_STEPS = 5;
+const LAST_STEP = TOTAL_STEPS - 1;
 
-const LAST_STEP = STEP_PROGRESS_PERCENT.length - 1;
+// The zip step can also branch to a dead-end "out of area" screen instead
+// of advancing, so step isn't purely numeric.
+type Step = number | 'out-of-area';
+
+function progressPercentForStep(step: Step): number {
+  if (step === 'out-of-area') return 0;
+  return (step / LAST_STEP) * 100;
+}
 
 type QuoteAnswers = {
   zip: string;
@@ -32,8 +36,9 @@ type QuoteAnswers = {
   contact: ContactInfo | null;
 };
 
-function stepFromSearchParams(searchParams: URLSearchParams): number {
+function stepFromSearchParams(searchParams: URLSearchParams): Step {
   const raw = searchParams.get('step');
+  if (raw === 'out-of-area') return 'out-of-area';
   const parsed = raw === null ? 0 : Number(raw);
   return Number.isInteger(parsed) && parsed >= 0 && parsed <= LAST_STEP
     ? parsed
@@ -59,7 +64,7 @@ function QuoteFlowInner() {
 
   // Each step forward pushes a new history entry (rather than replacing
   // the current one) so "back" returns to the previous question.
-  const goToStep = (next: number) => {
+  const goToStep = (next: Step) => {
     const params = new URLSearchParams(searchParams.toString());
     if (next === 0) {
       params.delete('step');
@@ -72,7 +77,12 @@ function QuoteFlowInner() {
 
   const handleZipComplete = (zip: string) => {
     setAnswers((prev) => ({ ...prev, zip }));
-    goToStep(1);
+    goToStep(isZipInServiceArea(zip) ? 1 : 'out-of-area');
+  };
+
+  const handleRetryZip = () => {
+    setAnswers((prev) => ({ ...prev, zip: '' }));
+    goToStep(0);
   };
 
   const handleStoriesSelect = (stories: HomeStories) => {
@@ -92,7 +102,7 @@ function QuoteFlowInner() {
 
   return (
     <main className='mx-auto min-h-screen w-full max-w-md bg-white px-6 pt-4'>
-      <QuoteHeader progressPercent={STEP_PROGRESS_PERCENT[step]} />
+      <QuoteHeader progressPercent={progressPercentForStep(step)} />
 
       {step === 0 && (
         <ZipCodeStep defaultZip={answers.zip} onComplete={handleZipComplete} />
@@ -118,6 +128,7 @@ function QuoteFlowInner() {
       {step === 4 && (
         <ThankYouStep firstName={answers.contact?.firstName ?? ''} />
       )}
+      {step === 'out-of-area' && <OutOfAreaStep onRetry={handleRetryZip} />}
     </main>
   );
 }
