@@ -13,6 +13,8 @@ import type { ContactInfo } from './ContactInfoStep';
 import ThankYouStep from './ThankYouStep';
 import OutOfAreaStep from './OutOfAreaStep';
 import { isZipInServiceArea } from '@/data/serviceAreaZipCodes';
+import { trackMetaCustomEvent, trackMetaEvent } from '@/components/MetaPixel';
+import { META_FORM_SUBMIT_EVENT, customEventIdFor } from '@/lib/meta';
 
 // 5 states: 4 questions (steps 0-3) plus the thank-you screen (step 4).
 // Progress reflects how many questions have been answered so far, so it
@@ -95,8 +97,37 @@ function QuoteFlowInner() {
     goToStep(3);
   };
 
-  const handleContactSubmit = (contact: ContactInfo) => {
+  // Sends the completed quote to our API (which forwards it to GHL) before
+  // showing the thank-you screen. Throws on failure so the form can show
+  // an error and let the user retry.
+  const handleContactSubmit = async (contact: ContactInfo) => {
     setAnswers((prev) => ({ ...prev, contact }));
+
+    // Shared by the browser Pixel and the server-side Conversions API event
+    // so Meta counts the lead once.
+    const eventId = crypto.randomUUID();
+
+    const res = await fetch('/api/quote', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        zip: answers.zip,
+        stories: answers.stories,
+        timeline: answers.timeline,
+        ...contact,
+        eventId,
+        eventSourceUrl: window.location.href,
+      }),
+    });
+    if (!res.ok) throw new Error(`Quote submission failed: ${res.status}`);
+
+    trackMetaEvent('Lead', {}, { eventID: eventId });
+    trackMetaCustomEvent(
+      META_FORM_SUBMIT_EVENT,
+      {},
+      { eventID: customEventIdFor(eventId) }
+    );
+
     goToStep(4);
   };
 

@@ -39,7 +39,7 @@ export default function ContactInfoStep({
   onSubmit,
 }: {
   defaultValue?: ContactInfo;
-  onSubmit: (contact: ContactInfo) => void;
+  onSubmit: (contact: ContactInfo) => Promise<void>;
 }) {
   const [firstName, setFirstName] = useState(defaultValue?.firstName ?? '');
   const [email, setEmail] = useState(defaultValue?.email ?? '');
@@ -47,22 +47,32 @@ export default function ContactInfoStep({
     formatPhoneNumber(defaultValue?.phone ?? '')
   );
   const [touched, setTouched] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState(false);
 
   const isFirstNameValid = firstName.trim().length > 0;
   const isEmailValid = EMAIL_PATTERN.test(email);
   const isPhoneValid = isValidPhone(phone);
 
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setTouched(true);
 
+    if (submitting) return;
     if (!isFirstNameValid || !isEmailValid || !isPhoneValid) return;
 
-    onSubmit({
-      firstName: firstName.trim(),
-      email: email.trim(),
-      phone: phone.trim(),
-    });
+    setSubmitting(true);
+    setSubmitError(false);
+    try {
+      await onSubmit({
+        firstName: firstName.trim(),
+        email: email.trim(),
+        phone: phone.trim(),
+      });
+    } catch {
+      setSubmitError(true);
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -136,10 +146,16 @@ export default function ContactInfoStep({
 
         <button
           type='submit'
-          className='mt-2 h-14 w-full bg-skyline-navy text-base font-bold text-white transition-colors hover:bg-skyline-navy/90'
+          disabled={submitting}
+          className='mt-2 h-14 w-full bg-skyline-navy text-base font-bold text-white transition-colors hover:bg-skyline-navy/90 disabled:opacity-70'
         >
-          Get my free quote
+          {submitting ? 'Sending…' : 'Get my free quote'}
         </button>
+        {submitError && (
+          <p className='text-sm text-red-600' role='alert'>
+            Something went wrong sending your info. Please try again.
+          </p>
+        )}
       </form>
     </>
   );
