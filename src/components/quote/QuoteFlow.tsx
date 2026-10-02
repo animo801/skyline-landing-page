@@ -13,8 +13,7 @@ import type { ContactInfo } from './ContactInfoStep';
 import ThankYouStep from './ThankYouStep';
 import OutOfAreaStep from './OutOfAreaStep';
 import { isZipInServiceArea } from '@/data/serviceAreaZipCodes';
-import { trackMetaCustomEvent, trackMetaEvent } from '@/components/MetaPixel';
-import { META_FORM_SUBMIT_EVENT, customEventIdFor } from '@/lib/meta';
+import { trackMetaEvent } from '@/components/MetaPixel';
 
 // 5 states: 4 questions (steps 0-3) plus the thank-you screen (step 4).
 // Progress reflects how many questions have been answered so far, so it
@@ -121,12 +120,9 @@ function QuoteFlowInner() {
     });
     if (!res.ok) throw new Error(`Quote submission failed: ${res.status}`);
 
+    // The custom "Vercel LP Form Submit" event is sent server-side only
+    // (see sendMetaLead), so it never needs browser/server deduplication.
     trackMetaEvent('Lead', {}, { eventID: eventId });
-    trackMetaCustomEvent(
-      META_FORM_SUBMIT_EVENT,
-      {},
-      { eventID: customEventIdFor(eventId) }
-    );
 
     goToStep(4);
   };

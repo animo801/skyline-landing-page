@@ -17,8 +17,8 @@ function readCookie(cookieHeader: string | null, name: string) {
 }
 
 // Sends a server-side Lead, plus the custom form-submit event, to Meta's
-// Conversions API. They share event IDs with the browser Pixel's copies so
-// Meta deduplicates them. User data is
+// Conversions API. The Lead shares its event ID with the browser Pixel's Lead
+// so Meta deduplicates the two; the custom event is server-only. User data is
 // normalized and SHA-256 hashed per Meta's customer information parameters.
 export async function sendMetaLead({
   request,

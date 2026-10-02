@@ -22,14 +22,6 @@ export function trackMetaEvent(
   window.fbq?.('track', event, params ?? {}, options ?? {});
 }
 
-export function trackMetaCustomEvent(
-  event: string,
-  params?: Record<string, unknown>,
-  options?: { eventID?: string }
-) {
-  window.fbq?.('trackCustom', event, params ?? {}, options ?? {});
-}
-
 export default function MetaPixel() {
   const pathname = usePathname();
   const isFirstRender = useRef(true);
