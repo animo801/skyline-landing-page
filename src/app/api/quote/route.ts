@@ -117,7 +117,7 @@ export async function POST(request: Request) {
     postal_code: zip.trim(),
     home_stories: storiesLabel,
     install_timeline: timelineText,
-    source: 'Skyline landing page quote form',
+    source: 'Vercel Landing Page Form Submit',
   };
 
   log.info('Forwarding to GHL webhook', {
