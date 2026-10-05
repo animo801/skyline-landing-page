@@ -28,7 +28,12 @@ export async function sendMetaLead({
   email,
   phone,
   zip,
+  log,
 }: {
+  log: {
+    info: (message: string, data?: unknown) => void;
+    error: (message: string, data?: unknown) => void;
+  };
   request: Request;
   eventId: string;
   eventSourceUrl: string | undefined;
@@ -39,7 +44,7 @@ export async function sendMetaLead({
 }) {
   const accessToken = process.env.META_CAPI_ACCESS_TOKEN;
   if (!accessToken) {
-    console.error('META_CAPI_ACCESS_TOKEN is not set');
+    log.error('META_CAPI_ACCESS_TOKEN is not set — skipping Meta CAPI');
     return;
   }
 
@@ -92,7 +97,10 @@ export async function sendMetaLead({
     }
   );
 
+  const result = { status: res.status, body: (await res.text()).slice(0, 500) };
   if (!res.ok) {
-    console.error('Meta CAPI request failed', res.status, await res.text());
+    log.error('Meta CAPI request failed', result);
+  } else {
+    log.info('Meta CAPI accepted events', result);
   }
 }
