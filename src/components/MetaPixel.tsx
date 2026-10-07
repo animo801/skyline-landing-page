@@ -37,6 +37,9 @@ export default function MetaPixel() {
     trackMetaEvent('PageView');
   }, [pathname]);
 
+  // The internal /funnel dashboard shouldn't report page views to Meta.
+  if (pathname.startsWith('/funnel')) return null;
+
   return (
     <Script id='meta-pixel' strategy='afterInteractive'>
       {`!function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?

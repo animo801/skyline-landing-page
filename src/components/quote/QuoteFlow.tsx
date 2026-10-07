@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import QuoteHeader from './QuoteHeader';
 import ZipCodeStep from './ZipCodeStep';
@@ -14,6 +14,8 @@ import ThankYouStep from './ThankYouStep';
 import OutOfAreaStep from './OutOfAreaStep';
 import { isZipInServiceArea } from '@/data/serviceAreaZipCodes';
 import { trackMetaEvent } from '@/components/MetaPixel';
+import { answerEvent, FUNNEL_EVENTS } from '@/lib/funnel';
+import { logFunnelEvent } from '@/lib/funnel-client';
 
 // 5 states: 4 questions (steps 0-3) plus the thank-you screen (step 4).
 // Progress reflects how many questions have been answered so far, so it
@@ -63,6 +65,12 @@ function QuoteFlowInner() {
     contact: null,
   });
 
+  // Funnel counts are unique sessions per step, so re-firing this on a
+  // remount (or React's dev double-invoke) doesn't inflate it.
+  useEffect(() => {
+    logFunnelEvent(FUNNEL_EVENTS.quizStart);
+  }, []);
+
   // Each step forward pushes a new history entry (rather than replacing
   // the current one) so "back" returns to the previous question.
   const goToStep = (next: Step) => {
@@ -78,7 +86,11 @@ function QuoteFlowInner() {
 
   const handleZipComplete = (zip: string) => {
     setAnswers((prev) => ({ ...prev, zip }));
-    goToStep(isZipInServiceArea(zip) ? 1 : 'out-of-area');
+    const inArea = isZipInServiceArea(zip);
+    logFunnelEvent(
+      inArea ? FUNNEL_EVENTS.zipInArea : FUNNEL_EVENTS.zipOutOfArea
+    );
+    goToStep(inArea ? 1 : 'out-of-area');
   };
 
   const handleRetryZip = () => {
@@ -88,11 +100,13 @@ function QuoteFlowInner() {
 
   const handleStoriesSelect = (stories: HomeStories) => {
     setAnswers((prev) => ({ ...prev, stories }));
+    logFunnelEvent(answerEvent('stories', stories));
     goToStep(2);
   };
 
   const handleTimelineSelect = (timeline: Timeline) => {
     setAnswers((prev) => ({ ...prev, timeline }));
+    logFunnelEvent(answerEvent('timeline', timeline));
     goToStep(3);
   };
 
@@ -123,6 +137,9 @@ function QuoteFlowInner() {
     // The custom "Vercel LP Form Submit" event is sent server-side only
     // (see sendMetaLead), so it never needs browser/server deduplication.
     trackMetaEvent('Lead', {}, { eventID: eventId });
+    // Logged only once the lead reached GHL, so "Converted" on /funnel
+    // matches real leads.
+    logFunnelEvent(FUNNEL_EVENTS.contactSubmit);
 
     goToStep(4);
   };

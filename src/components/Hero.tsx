@@ -55,8 +55,10 @@ export default function Hero() {
             see if we&rsquo;re a good fit.
           </p>
 
+          {/* data-cta lets FunnelTracker log clicks on this button. */}
           <Link
             href='/quote'
+            data-cta='quote'
             className='mt-8 inline-flex h-14 w-full items-center justify-center bg-skyline-navy px-8 text-lg font-bold text-white transition-colors hover:bg-skyline-navy/90 sm:w-auto'
           >
             Get your free quote
