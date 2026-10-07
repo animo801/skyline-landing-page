@@ -1,11 +1,38 @@
 // Zip codes within roughly a 1-hour drive of uptown Charlotte, NC —
 // derived from charlotte-1hr-zip-codes.csv (Core/Likely/Edge bands out to
-// ~55 miles). Regenerate this file if the source list changes.
+// ~55 miles), plus every Winston-Salem zip code (added manually — keep them
+// if this file is regenerated from the CSV).
 const SERVICE_AREA_ZIP_CODES = new Set([
   '27013',
   '27014',
   '27028',
   '27054',
+  // Winston-Salem
+  '27101',
+  '27102',
+  '27103',
+  '27104',
+  '27105',
+  '27106',
+  '27107',
+  '27108',
+  '27109',
+  '27110',
+  '27111',
+  '27113',
+  '27114',
+  '27115',
+  '27116',
+  '27117',
+  '27120',
+  '27127',
+  '27130',
+  '27150',
+  '27152',
+  '27155',
+  '27157',
+  '27198',
+  '27199',
   '27239',
   '27292',
   '27294',
