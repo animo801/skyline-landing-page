@@ -62,8 +62,8 @@ export default function Hero() {
           </h1>
 
           <p className='mt-3 text-lg leading-relaxed text-white/90 md:text-xl lg:text-[26px]'>
-            In around 10 minutes, our team will call you to discuss options and
-            see if we&rsquo;re a good fit.
+            Answer a few questions and our team will reach out to give you an
+            estimate.
           </p>
 
           {/* data-cta lets FunnelTracker log clicks on this button. */}
