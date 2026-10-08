@@ -1,10 +1,16 @@
 'use client';
 
-import { useRef, useState } from 'react';
-import type { ClipboardEvent, KeyboardEvent } from 'react';
+import { useState } from 'react';
+import type { FormEvent } from 'react';
 import QuestionHeading from './QuestionHeading';
 
 const ZIP_LENGTH = 5;
+
+// Keeps the first five digits, so a pasted or autofilled ZIP+4
+// ("28202-1234") or stray spaces/letters still produce a clean zip.
+function normalizeZip(value: string): string {
+  return value.replace(/\D/g, '').slice(0, ZIP_LENGTH);
+}
 
 export default function ZipCodeStep({
   defaultZip = '',
@@ -13,80 +19,15 @@ export default function ZipCodeStep({
   defaultZip?: string;
   onComplete: (zip: string) => void;
 }) {
-  const [digits, setDigits] = useState<string[]>(() => {
-    const seeded = Array(ZIP_LENGTH).fill('');
-    for (let i = 0; i < defaultZip.length && i < ZIP_LENGTH; i += 1) {
-      seeded[i] = defaultZip[i];
-    }
-    return seeded;
-  });
-  const inputRefs = useRef<Array<HTMLInputElement | null>>([]);
-  const hasCompleted = useRef(false);
+  const [zip, setZip] = useState(() => normalizeZip(defaultZip));
+  const [touched, setTouched] = useState(false);
 
-  const focusInput = (index: number) => {
-    inputRefs.current[index]?.focus();
-  };
+  const isValid = zip.length === ZIP_LENGTH;
 
-  const setDigitAt = (index: number, value: string) => {
-    setDigits((prev) => {
-      const next = [...prev];
-      next[index] = value;
-      return next;
-    });
-  };
-
-  const maybeComplete = (allDigits: string[]) => {
-    if (hasCompleted.current) return;
-    const zip = allDigits.join('');
-    if (zip.length === ZIP_LENGTH) {
-      hasCompleted.current = true;
-      onComplete(zip);
-    }
-  };
-
-  const handleChange = (index: number, rawValue: string) => {
-    // Keep only the digit the user just typed (last char) so retyping over
-    // an already-filled box replaces it instead of appending.
-    const value = rawValue.replace(/\D/g, '').slice(-1);
-
-    // Compute the next array up front rather than inside the setDigits
-    // updater — onComplete may call setState on a parent component, and
-    // React forbids updating another component from inside an updater
-    // function while this one is still rendering.
-    const next = [...digits];
-    next[index] = value;
-    setDigits(next);
-    maybeComplete(next);
-
-    if (value && index < ZIP_LENGTH - 1) {
-      focusInput(index + 1);
-    }
-  };
-
-  const handleKeyDown = (index: number, event: KeyboardEvent<HTMLInputElement>) => {
-    if (event.key === 'Backspace' && !digits[index] && index > 0) {
-      // Current box is already empty: jump back and clear the previous
-      // digit ourselves, rather than relying on where the native delete
-      // lands after we move focus.
-      event.preventDefault();
-      setDigitAt(index - 1, '');
-      focusInput(index - 1);
-    }
-  };
-
-  const handlePaste = (index: number, event: ClipboardEvent<HTMLInputElement>) => {
-    const pasted = event.clipboardData.getData('text').replace(/\D/g, '');
-    if (!pasted) return;
+  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-
-    const next = [...digits];
-    for (let i = 0; i < pasted.length && index + i < ZIP_LENGTH; i += 1) {
-      next[index + i] = pasted[i];
-    }
-    setDigits(next);
-    maybeComplete(next);
-
-    focusInput(Math.min(index + pasted.length, ZIP_LENGTH - 1));
+    setTouched(true);
+    if (isValid) onComplete(zip);
   };
 
   return (
@@ -95,27 +36,44 @@ export default function ZipCodeStep({
         What zip code is your home located in?
       </QuestionHeading>
 
-      <div className='mt-6 grid grid-cols-5 gap-3'>
-        {digits.map((digit, index) => (
+      <form
+        onSubmit={handleSubmit}
+        noValidate
+        className='mt-6 flex flex-col gap-4'
+      >
+        <div>
+          <label htmlFor='zip' className='sr-only'>
+            Zip code
+          </label>
           <input
-            key={index}
-            ref={(el) => {
-              inputRefs.current[index] = el;
-            }}
+            id='zip'
+            name='zip'
             type='text'
             inputMode='numeric'
-            pattern='[0-9]*'
-            autoComplete='off'
-            maxLength={1}
-            value={digit}
-            onChange={(event) => handleChange(index, event.target.value)}
-            onKeyDown={(event) => handleKeyDown(index, event)}
-            onPaste={(event) => handlePaste(index, event)}
-            aria-label={`Zip code digit ${index + 1}`}
-            className='h-[66px] w-full rounded-lg bg-[#f0f0f0] text-center text-2xl font-bold text-[#111] outline-none focus:ring-2 focus:ring-skyline-blue'
+            autoComplete='postal-code'
+            placeholder='Zip code'
+            // Room for a ZIP+4 so autofill isn't cut off before we trim it.
+            maxLength={10}
+            value={zip}
+            onChange={(event) => setZip(normalizeZip(event.target.value))}
+            aria-invalid={touched && !isValid}
+            aria-describedby={touched && !isValid ? 'zip-error' : undefined}
+            className='h-14 w-full rounded-lg bg-[#f0f0f0] px-4 text-lg font-bold text-[#111] outline-none placeholder:font-normal placeholder:text-black/40 focus:ring-2 focus:ring-skyline-blue'
           />
-        ))}
-      </div>
+          {touched && !isValid && (
+            <p id='zip-error' className='mt-1 text-sm text-red-600'>
+              Enter your 5-digit zip code.
+            </p>
+          )}
+        </div>
+
+        <button
+          type='submit'
+          className='h-14 w-full bg-skyline-navy text-base font-bold text-white transition-colors hover:bg-skyline-navy/90'
+        >
+          Continue
+        </button>
+      </form>
     </>
   );
 }
