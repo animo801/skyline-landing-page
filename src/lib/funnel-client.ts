@@ -1,3 +1,5 @@
+import { randomId } from './uuid';
+
 const SESSION_KEY = 'funnel_session_id';
 const VISITOR_KEY = 'funnel_visitor_id';
 
@@ -7,7 +9,7 @@ const VISITOR_KEY = 'funnel_visitor_id';
 function getId(storage: Storage, key: string): string {
   let id = storage.getItem(key);
   if (!id) {
-    id = crypto.randomUUID();
+    id = randomId();
     storage.setItem(key, id);
   }
   return id;

@@ -16,6 +16,7 @@ import { isZipInServiceArea } from '@/data/serviceAreaZipCodes';
 import { trackMetaEvent } from '@/components/MetaPixel';
 import { answerEvent, FUNNEL_EVENTS } from '@/lib/funnel';
 import { logFunnelEvent } from '@/lib/funnel-client';
+import { randomId } from '@/lib/uuid';
 
 // 5 states: 4 questions (steps 0-3) plus the thank-you screen (step 4).
 // Progress reflects how many questions have been answered so far, so it
@@ -48,6 +49,39 @@ function stepFromSearchParams(searchParams: URLSearchParams): Step {
     : 0;
 }
 
+// Tells the server about a submission that failed in the browser, so it
+// shows up in the Vercel logs even when the request never reached
+// /api/quote. Best-effort: never throws.
+function reportSubmitFailure(details: {
+  eventId: string;
+  reason: string;
+  status?: number;
+  attempt?: number;
+}) {
+  try {
+    const payload = JSON.stringify({
+      ...details,
+      online: navigator.onLine,
+      page: window.location.href,
+    });
+    if (navigator.sendBeacon) {
+      navigator.sendBeacon(
+        '/api/quote/client-error',
+        new Blob([payload], { type: 'application/json' })
+      );
+    } else {
+      fetch('/api/quote/client-error', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: payload,
+        keepalive: true,
+      }).catch(() => {});
+    }
+  } catch {
+    // Reporting is best-effort.
+  }
+}
+
 function QuoteFlowInner() {
   const router = useRouter();
   const pathname = usePathname();
@@ -64,6 +98,19 @@ function QuoteFlowInner() {
     timeline: null,
     contact: null,
   });
+
+  // Answers live in memory, so a refresh (or returning to a bookmarked
+  // ?step=3) lands mid-flow with nothing answered. Send them back to the
+  // start rather than letting them submit an incomplete quote.
+  const missingEarlierAnswer =
+    typeof step === 'number' &&
+    step < LAST_STEP &&
+    ((step >= 1 && !answers.zip) ||
+      (step >= 2 && !answers.stories) ||
+      (step >= 3 && !answers.timeline));
+  useEffect(() => {
+    if (missingEarlierAnswer) router.replace(pathname);
+  }, [missingEarlierAnswer, router, pathname]);
 
   // Funnel counts are unique sessions per step, so re-firing this on a
   // remount (or React's dev double-invoke) doesn't inflate it.
@@ -118,28 +165,58 @@ function QuoteFlowInner() {
 
     // Shared by the browser Pixel and the server-side Conversions API event
     // so Meta counts the lead once.
-    const eventId = crypto.randomUUID();
-
-    const res = await fetch('/api/quote', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        zip: answers.zip,
-        stories: answers.stories,
-        timeline: answers.timeline,
-        ...contact,
-        eventId,
-        eventSourceUrl: window.location.href,
-      }),
+    const eventId = randomId();
+    const body = JSON.stringify({
+      zip: answers.zip,
+      stories: answers.stories,
+      timeline: answers.timeline,
+      ...contact,
+      eventId,
+      eventSourceUrl: window.location.href,
     });
-    if (!res.ok) throw new Error(`Quote submission failed: ${res.status}`);
 
-    // The custom "Vercel LP Form Submit" event is sent server-side only
-    // (see sendMetaLead), so it never needs browser/server deduplication.
-    trackMetaEvent('Lead', {}, { eventID: eventId });
-    // Logged only once the lead reached GHL, so "Converted" on /funnel
-    // matches real leads.
-    logFunnelEvent(FUNNEL_EVENTS.contactSubmit);
+    // A dropped mobile connection makes fetch throw before any response, so
+    // network errors get one automatic retry. HTTP errors don't — the
+    // server already logged why it rejected the submission.
+    let res: Response | null = null;
+    for (let attempt = 1; attempt <= 2 && !res; attempt++) {
+      try {
+        res = await fetch('/api/quote', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body,
+        });
+      } catch (error) {
+        reportSubmitFailure({
+          eventId,
+          attempt,
+          reason: `network error: ${error instanceof Error ? error.message : String(error)}`,
+        });
+        if (attempt === 2) throw error;
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+      }
+    }
+    if (!res?.ok) {
+      reportSubmitFailure({
+        eventId,
+        status: res?.status,
+        reason: 'server returned an error',
+      });
+      throw new Error(`Quote submission failed: ${res?.status}`);
+    }
+
+    // The lead is already in GHL at this point, so tracking problems must
+    // never surface as a "something went wrong" error.
+    try {
+      // The custom "Vercel LP Form Submit" event is sent server-side only
+      // (see sendMetaLead), so it never needs browser/server deduplication.
+      trackMetaEvent('Lead', {}, { eventID: eventId });
+      // Logged only once the lead reached GHL, so "Converted" on /funnel
+      // matches real leads.
+      logFunnelEvent(FUNNEL_EVENTS.contactSubmit);
+    } catch {
+      // Ignore — tracking is best-effort.
+    }
 
     goToStep(4);
   };
