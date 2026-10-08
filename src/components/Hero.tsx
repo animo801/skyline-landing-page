@@ -22,30 +22,39 @@ export default function Hero() {
       </Link>
 
       {/* Image: extended 40% taller than the visible frame on mobile so the
-          extra height sits behind (under) the blue content panel below it. */}
-      <div className='relative h-[84vh] min-h-147 w-full md:h-auto md:min-h-screen md:w-1/2'>
-        <Image
-          src={heroHouse}
-          alt='A house at night showing off permanent Christmas lights installed along the roofline'
-          fill
-          priority
-          sizes='(min-width: 768px) 50vw, 100vw'
-          className='object-cover object-[center_12%] md:object-[center_25%]'
-        />
+          extra height sits behind (under) the blue content panel below it.
+          On mobile the photo is also shifted up 80px (its top is cropped off
+          by overflow-hidden) so the house sits higher and the panel can move
+          up with it. next/image's `fill` sets inline position styles, so the
+          shift is applied to a wrapper rather than the image itself. */}
+      <div className='relative h-[84vh] min-h-147 w-full overflow-hidden md:h-auto md:min-h-screen md:w-1/2'>
+        <div className='absolute inset-x-0 -top-20 bottom-0 md:top-0'>
+          <Image
+            src={heroHouse}
+            alt='A house at night showing off permanent Christmas lights installed along the roofline'
+            fill
+            priority
+            sizes='(min-width: 768px) 50vw, 100vw'
+            className='object-cover object-[center_12%] md:object-[center_25%]'
+          />
+        </div>
       </div>
 
       {/* Content panel: sits in normal flow below the image on mobile (so it
-          can grow past the image's bottom edge), full split panel beside the
-          image on desktop. */}
-      <div className='relative z-10 mt-[-36vh] mr-6 bg-skyline-blue py-8 pl-6 pr-6 shadow-2xl sm:mr-2 sm:py-10 sm:pl-8 sm:pr-8 md:mt-0 md:mr-0 md:flex md:w-1/2 md:flex-col md:justify-center md:px-16 md:py-12 md:shadow-none lg:px-20'>
+          can grow past the image's bottom edge), pulled up an extra 80px to
+          match the image shift so the button is visible without scrolling.
+          Full split panel beside the image on desktop. */}
+      <div className='relative z-10 mt-[calc(-36vh-80px)] mr-6 bg-skyline-blue py-8 pl-6 pr-6 shadow-2xl sm:mr-2 sm:py-10 sm:pl-8 sm:pr-8 md:mt-0 md:mr-0 md:flex md:w-1/2 md:flex-col md:justify-center md:px-16 md:py-12 md:shadow-none lg:px-20'>
         <div className='mx-auto w-full max-w-md md:mx-0 md:max-w-4xl lg:max-w-6xl'>
-          <h1 className='text-[30px] leading-[1] font-black text-white sm:text-4xl md:text-5xl lg:text-[62px] xl:text-[80px] 2xl:text-[96px]'>
+          {/* The page font is Arial, which has no weight above bold, so a thin
+              text stroke in the text color thickens the letters further. */}
+          <h1 className='text-[36px] leading-[1] font-black text-white [-webkit-text-stroke:0.025em_currentColor] sm:text-[44px] md:text-5xl lg:text-[62px] xl:text-[80px] 2xl:text-[96px]'>
             Beautiful Christmas lights you&rsquo;ll{' '}
             {/* Single-color vertical band: transparent top/bottom, hard-cut
-                to fully opaque skyline-navy for the middle 70% — no fade,
-                just a sharp edge at 15%/85%. box-decoration-clone keeps the
+                to fully opaque skyline-navy for the middle 60% — no fade,
+                just a sharp edge at 20%/80%. box-decoration-clone keeps the
                 band on every line when the phrase wraps. */}
-            <span className='bg-[linear-gradient(to_bottom,transparent_0%,transparent_15%,var(--color-skyline-navy)_15%,var(--color-skyline-navy)_85%,transparent_85%,transparent_100%)] box-decoration-clone px-1'>
+            <span className='bg-[linear-gradient(to_bottom,transparent_0%,transparent_20%,var(--color-skyline-navy)_20%,var(--color-skyline-navy)_80%,transparent_80%,transparent_100%)] box-decoration-clone px-1'>
               never install again.
             </span>
           </h1>
