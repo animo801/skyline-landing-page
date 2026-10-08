@@ -13,7 +13,7 @@ export default function OutOfAreaStep({ onRetry }: { onRetry: () => void }) {
       <button
         type='button'
         onClick={onRetry}
-        className='mt-8 h-14 w-full bg-skyline-navy text-base font-bold text-white transition-colors hover:bg-skyline-navy/90'
+        className='mt-8 h-14 w-full bg-skyline-blue text-base font-bold text-white transition-colors hover:bg-skyline-blue/90'
       >
         Try different zip code
       </button>

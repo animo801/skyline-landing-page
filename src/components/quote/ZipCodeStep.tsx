@@ -69,7 +69,7 @@ export default function ZipCodeStep({
 
         <button
           type='submit'
-          className='h-14 w-full bg-skyline-navy text-base font-bold text-white transition-colors hover:bg-skyline-navy/90'
+          className='h-14 w-full bg-skyline-blue text-base font-bold text-white transition-colors hover:bg-skyline-blue/90'
         >
           Continue
         </button>

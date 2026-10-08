@@ -147,7 +147,7 @@ export default function ContactInfoStep({
         <button
           type='submit'
           disabled={submitting}
-          className='mt-2 h-14 w-full bg-skyline-navy text-base font-bold text-white transition-colors hover:bg-skyline-navy/90 disabled:opacity-70'
+          className='mt-2 h-14 w-full bg-skyline-blue text-base font-bold text-white transition-colors hover:bg-skyline-blue/90 disabled:opacity-70'
         >
           {submitting ? 'Sending…' : 'Get my free quote'}
         </button>

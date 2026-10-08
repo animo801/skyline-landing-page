@@ -15,7 +15,7 @@ export default function ReviewPhotoCarousel() {
 
   return (
     <div className='mt-8'>
-      <p className='text-base font-bold text-white/90 sm:text-lg'>
+      <p className='text-base font-bold text-black/75 sm:text-lg'>
         100% 5-star reviews on Google
       </p>
       <div

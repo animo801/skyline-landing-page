@@ -12,12 +12,22 @@ export default function Hero() {
         href='/'
         className='absolute top-4 left-6 z-20 block w-35 sm:top-6 sm:left-8 sm:w-40'
       >
+        {/* White logo over the photo on mobile; dark logo on desktop,
+            where it sits over the white content panel instead. */}
         <Image
           src='/images/skyline-logo.svg'
           alt='Skyline Smart Lighting'
           width={178.53}
           height={47.64}
-          className='h-auto w-full'
+          className='h-auto w-full md:hidden'
+          priority
+        />
+        <Image
+          src='/images/skyline-logo-dark.svg'
+          alt='Skyline Smart Lighting'
+          width={178.53}
+          height={47.64}
+          className='hidden h-auto w-full md:block'
           priority
         />
       </Link>
@@ -45,23 +55,23 @@ export default function Hero() {
           can grow past the image's bottom edge), pulled up an extra 80px to
           match the image shift so the button is visible without scrolling.
           Full split panel beside the image on desktop. */}
-      <div className='relative z-10 mt-[calc(-36vh-80px)] mr-6 bg-skyline-blue py-8 pl-6 pr-6 shadow-2xl sm:mr-2 sm:py-10 sm:pl-8 sm:pr-8 md:mt-0 md:mr-0 md:flex md:w-1/2 md:flex-col md:justify-center md:px-16 md:py-12 md:shadow-none lg:px-20'>
+      <div className='relative z-10 mt-[calc(-36vh-80px)] mr-6 bg-white py-8 pl-6 pr-6 shadow-2xl sm:mr-2 sm:py-10 sm:pl-8 sm:pr-8 md:mt-0 md:mr-0 md:flex md:w-1/2 md:flex-col md:justify-center md:px-16 md:py-12 md:shadow-none lg:px-20'>
         <div className='mx-auto w-full max-w-md md:mx-0 md:max-w-4xl lg:max-w-6xl'>
           {/* The page font is Arial, which has no weight above bold, so a thin
               text stroke in the text color thickens the letters further. */}
-          <h1 className='text-[33px] leading-[1] font-black text-white [-webkit-text-stroke:0.025em_currentColor] sm:text-[44px] md:text-5xl lg:text-[56px] xl:text-[68px] 2xl:text-[80px]'>
+          <h1 className='text-[33px] leading-[1] font-black text-black [-webkit-text-stroke:0.025em_currentColor] sm:text-[44px] md:text-5xl lg:text-[56px] xl:text-[68px] 2xl:text-[80px]'>
             Beautiful Christmas lights you&rsquo;ll{' '}
-            {/* Marker-style band: a hard-edged skyline-navy stripe across the
+            {/* Marker-style band: a hard-edged light-blue stripe across the
                 lower part of the letters, ending just above the baseline
                 (~81% down Arial's glyph box) so the letters sit on it.
                 box-decoration-clone keeps the band on every line when the
                 phrase wraps. */}
-            <span className='bg-[linear-gradient(to_bottom,transparent_0%,transparent_45%,var(--color-skyline-navy)_45%,var(--color-skyline-navy)_79%,transparent_79%,transparent_100%)] box-decoration-clone px-1'>
+            <span className='bg-[linear-gradient(to_bottom,transparent_0%,transparent_45%,var(--color-skyline-highlight)_45%,var(--color-skyline-highlight)_79%,transparent_79%,transparent_100%)] box-decoration-clone px-1'>
               never install again.
             </span>
           </h1>
 
-          <p className='mt-3 text-lg leading-relaxed text-white/90 md:text-xl lg:text-[26px]'>
+          <p className='mt-3 text-lg leading-relaxed text-black/75 md:text-xl lg:text-[26px]'>
             Answer a few questions and our team will reach out to give you an
             estimate.
           </p>
@@ -70,7 +80,7 @@ export default function Hero() {
           <Link
             href='/quote'
             data-cta='quote'
-            className='mt-4 inline-flex h-14 w-full items-center justify-center bg-skyline-navy px-8 text-lg font-bold text-white transition-colors hover:bg-skyline-navy/90 sm:w-auto'
+            className='mt-4 inline-flex h-14 w-full items-center justify-center bg-skyline-blue px-8 text-lg font-bold text-white transition-colors hover:bg-skyline-blue/90 sm:w-auto'
           >
             Get your free quote
           </Link>
