@@ -1,6 +1,7 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import heroHouse from '../../public/images/image.jpg';
+import ReviewPhotoCarousel from './ReviewPhotoCarousel';
 
 export default function Hero() {
   return (
@@ -72,6 +73,8 @@ export default function Hero() {
           >
             Get your free quote
           </Link>
+
+          <ReviewPhotoCarousel />
         </div>
       </div>
     </section>

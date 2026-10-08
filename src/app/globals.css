@@ -14,6 +14,15 @@
   --color-skyline-navy: var(--color-skyline-navy);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+
+  /* Hero customer-photo carousel: the track holds the photo list twice, so
+     sliding it by -50% lands exactly where it started. */
+  --animate-marquee: marquee 40s linear infinite;
+  @keyframes marquee {
+    to {
+      transform: translateX(-50%);
+    }
+  }
 }
 
 body {
