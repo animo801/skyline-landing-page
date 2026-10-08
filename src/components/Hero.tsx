@@ -51,11 +51,12 @@ export default function Hero() {
               text stroke in the text color thickens the letters further. */}
           <h1 className='text-[36px] leading-[1] font-black text-white [-webkit-text-stroke:0.025em_currentColor] sm:text-[44px] md:text-5xl lg:text-[62px] xl:text-[80px] 2xl:text-[96px]'>
             Beautiful Christmas lights you&rsquo;ll{' '}
-            {/* Single-color vertical band: transparent top/bottom, hard-cut
-                to fully opaque skyline-navy for the middle 60% — no fade,
-                just a sharp edge at 20%/80%. box-decoration-clone keeps the
-                band on every line when the phrase wraps. */}
-            <span className='bg-[linear-gradient(to_bottom,transparent_0%,transparent_20%,var(--color-skyline-navy)_20%,var(--color-skyline-navy)_80%,transparent_80%,transparent_100%)] box-decoration-clone px-1'>
+            {/* Marker-style band: a hard-edged skyline-navy stripe across the
+                lower part of the letters, ending just above the baseline
+                (~81% down Arial's glyph box) so the letters sit on it.
+                box-decoration-clone keeps the band on every line when the
+                phrase wraps. */}
+            <span className='bg-[linear-gradient(to_bottom,transparent_0%,transparent_45%,var(--color-skyline-navy)_45%,var(--color-skyline-navy)_79%,transparent_79%,transparent_100%)] box-decoration-clone px-1'>
               never install again.
             </span>
           </h1>
