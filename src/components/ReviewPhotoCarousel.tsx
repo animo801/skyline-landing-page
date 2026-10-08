@@ -2,9 +2,12 @@ import Image from 'next/image';
 import { REVIEW_PHOTOS } from '@/data/reviewPhotos';
 
 /**
- * Endless horizontal strip of customer photos. The list is rendered twice
- * back to back and the track slides left by exactly half its width, so the
- * loop restarts seamlessly. Pauses on hover; with reduced motion turned on
+ * Endless horizontal strip of round customer profile photos. The list is
+ * rendered four times back to back and the track slides left by exactly
+ * half its width (two copies), so the loop restarts seamlessly and never
+ * shows a gap, even on very wide screens. Spacing is padding on each item
+ * rather than flex `gap`, so every item is the same width and half the
+ * track lines up exactly with the start of the third copy. Pauses on hover; with reduced motion turned on
  * it stops animating and becomes a swipeable row instead.
  */
 export default function ReviewPhotoCarousel() {
@@ -12,27 +15,29 @@ export default function ReviewPhotoCarousel() {
 
   return (
     <div
-      aria-label='Photos from our customers'
+      aria-label='Our customers'
       className='group mt-8 overflow-hidden [mask-image:linear-gradient(to_right,transparent,black_8%,black_92%,transparent)] motion-reduce:overflow-x-auto'
     >
-      <ul className='flex w-max animate-marquee gap-3 group-hover:[animation-play-state:paused] motion-reduce:animate-none'>
-        {[...REVIEW_PHOTOS, ...REVIEW_PHOTOS].map((photo, i) => {
-          // The second copy only exists to make the loop seamless, so
-          // screen readers skip it.
+      <ul className='flex w-max animate-marquee group-hover:[animation-play-state:paused] motion-reduce:animate-none'>
+        {Array.from({ length: 4 }, () => REVIEW_PHOTOS).flat().map((photo, i) => {
+          // The extra copies only exist to make the loop seamless, so
+          // screen readers skip them.
           const isDuplicate = i >= REVIEW_PHOTOS.length;
           return (
             <li
               key={i}
               aria-hidden={isDuplicate || undefined}
-              className='relative size-24 shrink-0 overflow-hidden rounded-md sm:size-28 lg:size-32'
+              className='shrink-0 pr-3'
             >
-              <Image
-                src={photo.src}
-                alt={isDuplicate ? '' : photo.alt}
-                fill
-                sizes='128px'
-                className='object-cover'
-              />
+              <div className='relative size-16 sm:size-[72px]'>
+                <Image
+                  src={photo.src}
+                  alt={isDuplicate ? '' : photo.alt}
+                  fill
+                  sizes='72px'
+                  className='object-contain'
+                />
+              </div>
             </li>
           );
         })}

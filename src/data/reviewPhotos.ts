@@ -1,7 +1,16 @@
-// Customer photos for the hero's scrolling carousel. Drop the files in
-// public/images/reviews/ and list them here (about 10 works well). Only use
+// Customer profile photos (from the business's Google reviews) for the
+// hero's scrolling carousel. Files live in public/images/reviews/; they're
+// round cutouts on transparent backgrounds. Keep at least 8 so one copy of
+// the list is wider than the panel and the loop stays seamless. Only use
 // photos the business owns or has the customer's permission to use. The
 // carousel hides itself while this list is empty.
 export const REVIEW_PHOTOS: { src: string; alt: string }[] = [
-  // { src: '/images/reviews/smith-home.jpg', alt: 'Two-story home in Huntersville with permanent white roofline lights' },
+  { src: '/images/reviews/customer-1.png', alt: 'Skyline customer' },
+  { src: '/images/reviews/customer-2.png', alt: 'Skyline customer' },
+  { src: '/images/reviews/customer-3.png', alt: 'Skyline customer' },
+  { src: '/images/reviews/customer-4.png', alt: 'Skyline customer' },
+  { src: '/images/reviews/customer-5.png', alt: 'Skyline customer' },
+  { src: '/images/reviews/customer-6.png', alt: 'Skyline customer' },
+  { src: '/images/reviews/customer-7.png', alt: 'Skyline customer' },
+  { src: '/images/reviews/customer-8.png', alt: 'Skyline customer' },
 ];
