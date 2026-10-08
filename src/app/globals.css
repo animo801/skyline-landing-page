@@ -7,7 +7,7 @@
   --color-skyline-navy: #0d2497;
   /* A brighter tint of skyline-blue: the hero headline's marker highlight,
      light enough for black text to stay readable on top of it. */
-  --color-skyline-highlight: #8da0ff;
+  --color-skyline-highlight: #a8b6ff;
 }
 
 @theme inline {
