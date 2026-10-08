@@ -49,7 +49,7 @@ export default function Hero() {
         <div className='mx-auto w-full max-w-md md:mx-0 md:max-w-4xl lg:max-w-6xl'>
           {/* The page font is Arial, which has no weight above bold, so a thin
               text stroke in the text color thickens the letters further. */}
-          <h1 className='text-[33px] leading-[1] font-black text-white [-webkit-text-stroke:0.025em_currentColor] sm:text-[44px] md:text-5xl lg:text-[62px] xl:text-[80px] 2xl:text-[96px]'>
+          <h1 className='text-[33px] leading-[1] font-black text-white [-webkit-text-stroke:0.025em_currentColor] sm:text-[44px] md:text-5xl lg:text-[56px] xl:text-[68px] 2xl:text-[80px]'>
             Beautiful Christmas lights you&rsquo;ll{' '}
             {/* Marker-style band: a hard-edged skyline-navy stripe across the
                 lower part of the letters, ending just above the baseline
