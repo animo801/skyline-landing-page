@@ -2,11 +2,13 @@ import type { Metadata } from 'next';
 import Image from 'next/image';
 import { connection } from 'next/server';
 import { Redis } from '@upstash/redis';
+import type { FunnelId } from '@/lib/funnel';
 import {
   addDays,
   answerEvent,
   FUNNEL_EVENTS,
   FUNNEL_TIMEZONE,
+  funnelEvent,
   funnelDay,
   funnelKey,
   LANDED_EVENTS,
@@ -25,51 +27,82 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
-const STAGES: FunnelStage[] = [
+// The same funnel shape for every landing page; only the event names
+// (prefixed per page) and the first steps' wording differ.
+function buildStages(
+  funnel: FunnelId,
+  copy: { landed: string; cta: string; started: string }
+): FunnelStage[] {
+  const e = (eventName: string) => funnelEvent(funnel, eventName);
+  return [
+    {
+      title: 'Landed',
+      nodes: [{ event: e(FUNNEL_EVENTS.landed), label: copy.landed }],
+    },
+    {
+      title: 'Clicked CTA',
+      nodes: [{ event: e(FUNNEL_EVENTS.ctaClick), label: copy.cta }],
+    },
+    {
+      title: 'Started quote',
+      nodes: [{ event: e(FUNNEL_EVENTS.quizStart), label: copy.started }],
+    },
+    {
+      title: 'Q1. Zip code',
+      nodes: [
+        { event: e(FUNNEL_EVENTS.zipInArea), label: 'In service area' },
+        {
+          event: e(FUNNEL_EVENTS.zipOutOfArea),
+          label: 'Outside service area',
+          terminal: true,
+        },
+      ],
+    },
+    {
+      title: 'Q2. Home stories',
+      nodes: STORIES_OPTIONS.map((o) => ({
+        event: e(answerEvent('stories', o.value)),
+        label: o.label,
+      })),
+    },
+    {
+      title: 'Q3. Timeline',
+      nodes: TIMELINE_OPTIONS.map((o) => ({
+        event: e(answerEvent('timeline', o.value)),
+        label: o.label,
+      })),
+    },
+    {
+      title: 'Converted',
+      nodes: [
+        { event: e(FUNNEL_EVENTS.contactSubmit), label: 'Submitted contact info' },
+      ],
+    },
+  ];
+}
+
+// One tab per landing page. `key` is the `page` search param; the first
+// entry is the default tab.
+const PAGES = [
   {
-    title: 'Landed',
-    nodes: [{ event: FUNNEL_EVENTS.landed, label: 'Landed on /' }],
+    key: 'home',
+    path: '/',
+    description: 'Original page + /quote',
+    stages: buildStages('home', {
+      landed: 'Landed on /',
+      cta: 'Clicked “Get your free quote”',
+      started: 'Saw the zip question',
+    }),
   },
   {
-    title: 'Clicked CTA',
-    nodes: [
-      { event: FUNNEL_EVENTS.ctaClick, label: 'Clicked “Get your free quote”' },
-    ],
-  },
-  {
-    title: 'Started quote',
-    nodes: [{ event: FUNNEL_EVENTS.quizStart, label: 'Saw the zip question' }],
-  },
-  {
-    title: 'Q1. Zip code',
-    nodes: [
-      { event: FUNNEL_EVENTS.zipInArea, label: 'In service area' },
-      {
-        event: FUNNEL_EVENTS.zipOutOfArea,
-        label: 'Outside service area',
-        terminal: true,
-      },
-    ],
-  },
-  {
-    title: 'Q2. Home stories',
-    nodes: STORIES_OPTIONS.map((o) => ({
-      event: answerEvent('stories', o.value),
-      label: o.label,
-    })),
-  },
-  {
-    title: 'Q3. Timeline',
-    nodes: TIMELINE_OPTIONS.map((o) => ({
-      event: answerEvent('timeline', o.value),
-      label: o.label,
-    })),
-  },
-  {
-    title: 'Converted',
-    nodes: [
-      { event: FUNNEL_EVENTS.contactSubmit, label: 'Submitted contact info' },
-    ],
+    key: 'v2',
+    path: '/v2',
+    description: 'Single-page with quote card',
+    stages: buildStages('v2', {
+      landed: 'Landed on /v2',
+      cta: 'Clicked the hero button',
+      started: 'Saw the quote card',
+    }),
   },
 ];
 
@@ -149,7 +182,9 @@ type Metrics = {
 };
 
 async function loadMetrics(range: Range): Promise<Metrics> {
-  const events = STAGES.flatMap((s) => s.nodes.map((n) => n.event));
+  const events = PAGES.flatMap((p) =>
+    p.stages.flatMap((s) => s.nodes.map((n) => n.event))
+  );
   const setNames = [...events, VISITORS_NAME];
   const viewNames = LANDED_EVENTS.map(viewsName);
   const pipeline = Redis.fromEnv().pipeline();
@@ -205,6 +240,13 @@ export default async function FunnelPage({
   await connection();
   const params = await searchParams;
   const { range, activeKey } = resolveRange(params);
+  const page = PAGES.find((p) => p.key === params.page) ?? PAGES[0];
+  // Keeps the selected tab when the date range changes, and vice versa.
+  const pageParam = page === PAGES[0] ? undefined : page.key;
+  const rangeParams =
+    activeKey === 'custom'
+      ? { from: range?.from, to: range?.to }
+      : { range: activeKey === 'all' ? undefined : activeKey };
 
   let metrics: Metrics = { counts: {}, views: 0, visitors: 0 };
   let error: string | null = null;
@@ -215,7 +257,12 @@ export default async function FunnelPage({
   }
 
   const { counts, views, visitors } = metrics;
-  const leads = counts[FUNNEL_EVENTS.contactSubmit] ?? 0;
+  // Headline numbers cover every landing page together.
+  const leads = PAGES.reduce(
+    (sum, p) =>
+      sum + (counts[funnelEvent(p.key as FunnelId, FUNNEL_EVENTS.contactSubmit)] ?? 0),
+    0
+  );
   const rangeLabel = !range
     ? 'all time'
     : range.from === range.to
@@ -245,7 +292,10 @@ export default async function FunnelPage({
             {PRESETS.map((p) => (
               <a
                 key={p.key}
-                href={funnelHref({ range: p.key === 'all' ? undefined : p.key })}
+                href={funnelHref({
+                  range: p.key === 'all' ? undefined : p.key,
+                  page: pageParam,
+                })}
                 aria-current={activeKey === p.key ? 'page' : undefined}
                 className={`rounded-full px-4 py-2 text-sm font-bold no-underline ${
                   activeKey === p.key
@@ -259,6 +309,9 @@ export default async function FunnelPage({
           </nav>
 
           <form action='/funnel' className='flex flex-wrap items-end gap-2'>
+            {pageParam ? (
+              <input type='hidden' name='page' value={pageParam} />
+            ) : null}
             <label className='text-xs font-bold text-black/50'>
               From
               <input
@@ -301,7 +354,7 @@ export default async function FunnelPage({
           <Stat
             label='Page views'
             value={views.toLocaleString()}
-            note='Reloads included'
+            note='All pages, reloads included'
           />
           <Stat
             label='Unique visitors'
@@ -311,7 +364,7 @@ export default async function FunnelPage({
           <Stat
             label='Leads'
             value={leads.toLocaleString()}
-            note='Submitted contact info'
+            note='Submitted contact info, all pages'
           />
           <Stat
             label='Conversion rate'
@@ -330,8 +383,38 @@ export default async function FunnelPage({
           </p>
         ) : null}
 
-        <div className='mt-10'>
-          <FunnelChart stages={STAGES} counts={counts} />
+        <nav
+          aria-label='Landing page'
+          className='mt-10 flex gap-6 overflow-x-auto border-b border-black/10'
+        >
+          {PAGES.map((p) => {
+            const active = p === page;
+            const landed = counts[p.stages[0].nodes[0].event] ?? 0;
+            return (
+              <a
+                key={p.key}
+                href={funnelHref({
+                  ...rangeParams,
+                  page: p === PAGES[0] ? undefined : p.key,
+                })}
+                aria-current={active ? 'page' : undefined}
+                className={`-mb-px shrink-0 border-b-2 pb-3 no-underline ${
+                  active
+                    ? 'border-black text-black'
+                    : 'border-transparent text-black/50 hover:text-black/80'
+                }`}
+              >
+                <span className='block text-base font-bold'>{p.path}</span>
+                <span className='block text-xs'>
+                  {p.description} · {landed.toLocaleString()} sessions
+                </span>
+              </a>
+            );
+          })}
+        </nav>
+
+        <div className='mt-6'>
+          <FunnelChart stages={page.stages} counts={counts} />
         </div>
 
         <p className='mt-10 text-xs text-black/40'>

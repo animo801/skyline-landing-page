@@ -1,9 +1,17 @@
+'use client';
+
+import { useQuoteLayout } from './QuoteLayout';
+
 export default function OutOfAreaStep({ onRetry }: { onRetry: () => void }) {
+  const isCard = useQuoteLayout() === 'card';
+  const Heading = isCard ? 'h3' : 'h1';
   return (
-    <div className='mt-10'>
-      <h1 className='text-[32px] leading-[1.15] font-black text-[#111]'>
+    <div className={isCard ? 'py-4 text-center' : 'mt-10'}>
+      <Heading
+        className={`${isCard ? 'text-2xl' : 'text-[32px]'} leading-[1.15] font-black text-[#111]`}
+      >
         So sorry!
-      </h1>
+      </Heading>
       <p className='mt-3 text-lg leading-relaxed text-black/70'>
         We only operate within an hour of Charlotte, NC. If you think there
         was an error with our website, give us a call and we&rsquo;d be happy

@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense, useEffect, useState } from 'react';
+import { Suspense, useEffect, useRef, useState } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import QuoteHeader from './QuoteHeader';
 import ZipCodeStep from './ZipCodeStep';
@@ -14,7 +14,10 @@ import ThankYouStep from './ThankYouStep';
 import OutOfAreaStep from './OutOfAreaStep';
 import { isZipInServiceArea } from '@/data/serviceAreaZipCodes';
 import { trackMetaEvent } from '@/components/MetaPixel';
-import { answerEvent, FUNNEL_EVENTS } from '@/lib/funnel';
+import { answerEvent, FUNNEL_EVENTS, funnelEvent } from '@/lib/funnel';
+import type { FunnelId } from '@/lib/funnel';
+import { QuoteLayoutProvider } from './QuoteLayout';
+import type { QuoteLayout } from './QuoteLayout';
 import { logFunnelEvent } from '@/lib/funnel-client';
 import { randomId } from '@/lib/uuid';
 
@@ -82,8 +85,20 @@ function reportSubmitFailure(details: {
   }
 }
 
-function QuoteFlowInner() {
+type QuoteFlowProps = {
+  // 'page' is the full-screen flow on /quote; 'card' embeds it in a
+  // landing page (e.g. /v2) without its own header.
+  layout?: QuoteLayout;
+  // Which landing page's funnel on /funnel these steps count toward.
+  funnel?: FunnelId;
+};
+
+function QuoteFlowInner({ layout = 'page', funnel = 'home' }: QuoteFlowProps) {
   const router = useRouter();
+  const isCard = layout === 'card';
+  const cardRef = useRef<HTMLDivElement>(null);
+  const track = (eventName: string) =>
+    logFunnelEvent(funnelEvent(funnel, eventName));
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
@@ -109,14 +124,42 @@ function QuoteFlowInner() {
       (step >= 2 && !answers.stories) ||
       (step >= 3 && !answers.timeline));
   useEffect(() => {
-    if (missingEarlierAnswer) router.replace(pathname);
+    if (missingEarlierAnswer) router.replace(pathname, { scroll: false });
   }, [missingEarlierAnswer, router, pathname]);
 
+  // "Started quote" means the visitor saw the first question: on mount for
+  // the full-page flow, and once the card scrolls into view when embedded.
   // Funnel counts are unique sessions per step, so re-firing this on a
   // remount (or React's dev double-invoke) doesn't inflate it.
   useEffect(() => {
-    logFunnelEvent(FUNNEL_EVENTS.quizStart);
-  }, []);
+    const quizStart = funnelEvent(funnel, FUNNEL_EVENTS.quizStart);
+    const card = cardRef.current;
+    if (!isCard || !card || typeof IntersectionObserver === 'undefined') {
+      logFunnelEvent(quizStart);
+      return;
+    }
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((entry) => entry.isIntersecting)) {
+          logFunnelEvent(quizStart);
+          observer.disconnect();
+        }
+      },
+      { threshold: 0.3 }
+    );
+    observer.observe(card);
+    return () => observer.disconnect();
+  }, [isCard, funnel]);
+
+  // When embedded, keep the card's top in view as it changes height between
+  // steps, but don't yank the page around if it's already visible.
+  useEffect(() => {
+    const card = cardRef.current;
+    if (!isCard || !card) return;
+    if (card.getBoundingClientRect().top < 0) {
+      card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }, [isCard, step]);
 
   // Each step forward pushes a new history entry (rather than replacing
   // the current one) so "back" returns to the previous question.
@@ -128,15 +171,16 @@ function QuoteFlowInner() {
       params.set('step', String(next));
     }
     const query = params.toString();
-    router.push(query ? `${pathname}?${query}` : pathname);
+    // Embedded in a landing page, stay put instead of jumping to the top.
+    router.push(query ? `${pathname}?${query}` : pathname, {
+      scroll: !isCard,
+    });
   };
 
   const handleZipComplete = (zip: string) => {
     setAnswers((prev) => ({ ...prev, zip }));
     const inArea = isZipInServiceArea(zip);
-    logFunnelEvent(
-      inArea ? FUNNEL_EVENTS.zipInArea : FUNNEL_EVENTS.zipOutOfArea
-    );
+    track(inArea ? FUNNEL_EVENTS.zipInArea : FUNNEL_EVENTS.zipOutOfArea);
     goToStep(inArea ? 1 : 'out-of-area');
   };
 
@@ -147,13 +191,13 @@ function QuoteFlowInner() {
 
   const handleStoriesSelect = (stories: HomeStories) => {
     setAnswers((prev) => ({ ...prev, stories }));
-    logFunnelEvent(answerEvent('stories', stories));
+    track(answerEvent('stories', stories));
     goToStep(2);
   };
 
   const handleTimelineSelect = (timeline: Timeline) => {
     setAnswers((prev) => ({ ...prev, timeline }));
-    logFunnelEvent(answerEvent('timeline', timeline));
+    track(answerEvent('timeline', timeline));
     goToStep(3);
   };
 
@@ -213,7 +257,7 @@ function QuoteFlowInner() {
       trackMetaEvent('Lead', {}, { eventID: eventId });
       // Logged only once the lead reached GHL, so "Converted" on /funnel
       // matches real leads.
-      logFunnelEvent(FUNNEL_EVENTS.contactSubmit);
+      track(FUNNEL_EVENTS.contactSubmit);
     } catch {
       // Ignore — tracking is best-effort.
     }
@@ -221,10 +265,8 @@ function QuoteFlowInner() {
     goToStep(4);
   };
 
-  return (
-    <main className='mx-auto min-h-screen w-full max-w-md bg-white px-6 pt-4'>
-      <QuoteHeader progressPercent={progressPercentForStep(step)} />
-
+  const steps = (
+    <>
       {step === 0 && (
         <ZipCodeStep defaultZip={answers.zip} onComplete={handleZipComplete} />
       )}
@@ -250,15 +292,30 @@ function QuoteFlowInner() {
         <ThankYouStep firstName={answers.contact?.firstName ?? ''} />
       )}
       {step === 'out-of-area' && <OutOfAreaStep onRetry={handleRetryZip} />}
-    </main>
+    </>
+  );
+
+  return (
+    <QuoteLayoutProvider value={layout}>
+      {isCard ? (
+        <div ref={cardRef} className='scroll-mt-4'>
+          {steps}
+        </div>
+      ) : (
+        <main className='mx-auto min-h-screen w-full max-w-md bg-white px-6 pt-4'>
+          <QuoteHeader progressPercent={progressPercentForStep(step)} />
+          {steps}
+        </main>
+      )}
+    </QuoteLayoutProvider>
   );
 }
 
-export default function QuoteFlow() {
+export default function QuoteFlow(props: QuoteFlowProps) {
   // useSearchParams requires a Suspense boundary above it.
   return (
     <Suspense fallback={null}>
-      <QuoteFlowInner />
+      <QuoteFlowInner {...props} />
     </Suspense>
   );
 }

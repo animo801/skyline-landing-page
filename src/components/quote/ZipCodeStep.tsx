@@ -32,7 +32,10 @@ export default function ZipCodeStep({
 
   return (
     <>
-      <QuestionHeading number={1}>
+      <QuestionHeading
+        number={1}
+        hint='So we can confirm you’re in our service area'
+      >
         What zip code is your home located in?
       </QuestionHeading>
 

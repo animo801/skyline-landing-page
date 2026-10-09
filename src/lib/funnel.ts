@@ -17,6 +17,16 @@ export const FUNNEL_EVENTS = {
   contactSubmit: 'contact_submit',
 } as const;
 
+// Each landing page has its own funnel. The original page ('home') uses the
+// bare event names (so its existing history keeps counting); other pages
+// prefix them, e.g. `v2:landed`, so /funnel can show them side by side.
+export const FUNNELS = ['home', 'v2'] as const;
+export type FunnelId = (typeof FUNNELS)[number];
+
+export function funnelEvent(funnel: FunnelId, eventName: string) {
+  return funnel === 'home' ? eventName : `${funnel}:${eventName}`;
+}
+
 // Answer options for each select question, with the labels /funnel shows.
 // Kept in sync with HomeStoriesStep and TimelineStep by their types.
 export const STORIES_OPTIONS: { value: HomeStories; label: string }[] = [
@@ -37,7 +47,9 @@ export function answerEvent(question: 'stories' | 'timeline', value: string) {
 // Page loads of the landing page. Besides the usual unique-session set,
 // these also bump a page-view counter and add the visitor to the
 // unique-visitors set that the headline numbers on /funnel read.
-export const LANDED_EVENTS: string[] = [FUNNEL_EVENTS.landed];
+export const LANDED_EVENTS: string[] = FUNNELS.map((funnel) =>
+  funnelEvent(funnel, FUNNEL_EVENTS.landed)
+);
 
 // Counter of every page load (reloads included) for a landed event.
 export function viewsName(landedEvent: string) {
@@ -45,14 +57,18 @@ export function viewsName(landedEvent: string) {
 }
 
 // Set of visitor ids (kept in localStorage, so they survive across
-// sessions and days) that landed on the page.
+// sessions and days) that landed on any of the landing pages.
 export const VISITORS_NAME = 'visitors';
 
-export const ALLOWED_FUNNEL_EVENTS = new Set<string>([
+const BASE_EVENTS = [
   ...Object.values(FUNNEL_EVENTS),
   ...STORIES_OPTIONS.map((o) => answerEvent('stories', o.value)),
   ...TIMELINE_OPTIONS.map((o) => answerEvent('timeline', o.value)),
-]);
+];
+
+export const ALLOWED_FUNNEL_EVENTS = new Set<string>(
+  FUNNELS.flatMap((funnel) => BASE_EVENTS.map((e) => funnelEvent(funnel, e)))
+);
 
 // One Redis set per event, holding the session ids that fired it — so the
 // set's size is the number of unique sessions at that step. Each event is

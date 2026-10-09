@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import QuestionHeading from './QuestionHeading';
 import OptionButton from './OptionButton';
+import OptionGroup from './OptionGroup';
 
 export type Timeline = 'before-month-end' | 'before-dec-15' | 'next-year';
 
@@ -32,15 +33,11 @@ export default function TimelineStep({
 
   return (
     <>
-      <QuestionHeading number={3}>
+      <QuestionHeading number={3} hint='So we can plan your install date'>
         How soon are you hoping to have lights installed?
       </QuestionHeading>
 
-      <div
-        className='mt-8 flex flex-col gap-4'
-        role='radiogroup'
-        aria-label='Desired timeline'
-      >
+      <OptionGroup label='Desired timeline'>
         {options.map((option) => (
           <OptionButton
             key={option.value}
@@ -49,7 +46,7 @@ export default function TimelineStep({
             onClick={() => handleSelect(option.value)}
           />
         ))}
-      </div>
+      </OptionGroup>
     </>
   );
 }

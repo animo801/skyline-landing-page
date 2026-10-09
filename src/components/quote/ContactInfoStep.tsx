@@ -77,7 +77,10 @@ export default function ContactInfoStep({
 
   return (
     <>
-      <QuestionHeading number={4}>
+      <QuestionHeading
+        number={4}
+        hint='So our team can reach out with your estimate'
+      >
         Almost done — how can we reach you?
       </QuestionHeading>
 

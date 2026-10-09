@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import QuestionHeading from './QuestionHeading';
 import OptionButton from './OptionButton';
+import OptionGroup from './OptionGroup';
 
 export type HomeStories = 'single' | 'two';
 
@@ -27,15 +28,14 @@ export default function HomeStoriesStep({
 
   return (
     <>
-      <QuestionHeading number={2}>
+      <QuestionHeading
+        number={2}
+        hint='So we can estimate how much roofline we’ll be lighting'
+      >
         How many stories is your home?
       </QuestionHeading>
 
-      <div
-        className='mt-8 flex flex-col gap-4'
-        role='radiogroup'
-        aria-label='Number of stories'
-      >
+      <OptionGroup label='Number of stories'>
         {OPTIONS.map((option) => (
           <OptionButton
             key={option.value}
@@ -44,7 +44,7 @@ export default function HomeStoriesStep({
             onClick={() => handleSelect(option.value)}
           />
         ))}
-      </div>
+      </OptionGroup>
     </>
   );
 }

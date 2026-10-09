@@ -27,6 +27,15 @@ function timelineLabel(timeline: string): string | null {
   }
 }
 
+function landingPagePath(url: unknown): string {
+  if (typeof url !== 'string') return 'unknown';
+  try {
+    return new URL(url).pathname;
+  } catch {
+    return 'unknown';
+  }
+}
+
 function isNonEmptyString(value: unknown): value is string {
   return typeof value === 'string' && value.trim().length > 0;
 }
@@ -118,6 +127,9 @@ export async function POST(request: Request) {
     home_stories: storiesLabel,
     install_timeline: timelineText,
     source: 'Vercel Landing Page Form Submit',
+    // Which landing page the lead came from (e.g. "/quote" or "/v2"), so
+    // page versions can be compared in GHL.
+    landing_page: landingPagePath(eventSourceUrl),
   };
 
   log.info('Forwarding to GHL webhook', {
