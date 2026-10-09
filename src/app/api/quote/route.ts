@@ -1,6 +1,7 @@
 import { after } from 'next/server';
 import { isZipInServiceArea } from '@/data/serviceAreaZipCodes';
 import { sendMetaLead } from '@/lib/metaConversionsApi';
+import { VARIANTS } from '@/lib/abTest';
 
 // Quote submissions are forwarded server-side to the GoHighLevel inbound
 // webhook so the webhook URL never ships in the client bundle.
@@ -27,13 +28,9 @@ function timelineLabel(timeline: string): string | null {
   }
 }
 
-function landingPagePath(url: unknown): string {
-  if (typeof url !== 'string') return 'unknown';
-  try {
-    return new URL(url).pathname;
-  } catch {
-    return 'unknown';
-  }
+function landingPageLabel(funnel: unknown): string {
+  const variant = Object.values(VARIANTS).find((v) => v.funnel === funnel);
+  return variant?.label ?? 'unknown';
 }
 
 function isNonEmptyString(value: unknown): value is string {
@@ -68,7 +65,7 @@ export async function POST(request: Request) {
     return Response.json({ error: 'Invalid JSON' }, { status: 400 });
   }
 
-  const { zip, stories, timeline, firstName, email, phone, eventId, eventSourceUrl } =
+  const { zip, stories, timeline, firstName, email, phone, eventId, eventSourceUrl, funnel } =
     body;
   const log = createLogger(
     isNonEmptyString(eventId) ? eventId.slice(0, 8) : crypto.randomUUID().slice(0, 8)
@@ -83,6 +80,7 @@ export async function POST(request: Request) {
     hasPhone: isNonEmptyString(phone),
     eventId,
     eventSourceUrl,
+    funnel,
   });
 
   const webhookUrl = process.env.GHL_WEBHOOK_URL;
@@ -127,9 +125,9 @@ export async function POST(request: Request) {
     home_stories: storiesLabel,
     install_timeline: timelineText,
     source: 'Vercel Landing Page Form Submit',
-    // Which landing page the lead came from (e.g. "/quote" or "/v2"), so
-    // page versions can be compared in GHL.
-    landing_page: landingPagePath(eventSourceUrl),
+    // Which landing page design the lead came from, so the A/B variants
+    // can be compared in GHL too.
+    landing_page: landingPageLabel(funnel),
   };
 
   log.info('Forwarding to GHL webhook', {

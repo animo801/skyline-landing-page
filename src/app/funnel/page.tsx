@@ -3,6 +3,7 @@ import Image from 'next/image';
 import { connection } from 'next/server';
 import { Redis } from '@upstash/redis';
 import type { FunnelId } from '@/lib/funnel';
+import { VARIANTS } from '@/lib/abTest';
 import {
   addDays,
   answerEvent,
@@ -86,7 +87,7 @@ function buildStages(
 const PAGES = [
   {
     key: 'home',
-    path: '/',
+    path: VARIANTS.a.label,
     description: 'Original page + /quote',
     stages: buildStages('home', {
       landed: 'Landed on /',
@@ -96,8 +97,8 @@ const PAGES = [
   },
   {
     key: 'v2',
-    path: '/v2',
-    description: 'Single-page with quote card',
+    path: VARIANTS.b.label,
+    description: 'New single-page design',
     stages: buildStages('v2', {
       landed: 'Landed on /v2',
       cta: 'Clicked the hero button',
@@ -383,6 +384,8 @@ export default async function FunnelPage({
           </p>
         ) : null}
 
+        <AbComparison counts={counts} />
+
         <nav
           aria-label='Landing page'
           className='mt-10 flex gap-6 overflow-x-auto border-b border-black/10'
@@ -442,5 +445,146 @@ function Stat({
       </p>
       <p className='mt-2 text-xs text-black/40'>{note}</p>
     </div>
+  );
+}
+
+// Standard normal CDF (Abramowitz–Stegun approximation), for the A/B
+// confidence figure below.
+function normalCdf(z: number) {
+  const t = 1 / (1 + 0.2316419 * Math.abs(z));
+  const d = 0.3989423 * Math.exp((-z * z) / 2);
+  const p =
+    d *
+    t *
+    (0.3193815 +
+      t * (-0.3565638 + t * (1.781478 + t * (-1.821256 + t * 1.330274))));
+  return z > 0 ? 1 - p : p;
+}
+
+// How confident we can be that the two lead rates genuinely differ
+// (two-proportion z-test, two-sided). Null until both variants have
+// enough sessions for the number to mean anything.
+function confidenceTheyDiffer(
+  leadsA: number,
+  sessionsA: number,
+  leadsB: number,
+  sessionsB: number
+): number | null {
+  if (sessionsA < 30 || sessionsB < 30) return null;
+  const pooled = (leadsA + leadsB) / (sessionsA + sessionsB);
+  const se = Math.sqrt(
+    pooled * (1 - pooled) * (1 / sessionsA + 1 / sessionsB)
+  );
+  if (se === 0) return null;
+  const z = (leadsB / sessionsB - leadsA / sessionsA) / se;
+  return 1 - 2 * (1 - normalCdf(Math.abs(z)));
+}
+
+function rate(part: number, whole: number) {
+  return whole > 0 ? part / whole : null;
+}
+
+function formatRate(value: number | null) {
+  return value === null ? '—' : `${(value * 100).toFixed(1)}%`;
+}
+
+/**
+ * Side-by-side A/B summary for the home page test: the key steps for each
+ * variant as a share of its own sessions, B's lift over A, and how
+ * confident we can be that the lead rates really differ.
+ */
+function AbComparison({ counts }: { counts: FunnelCounts }) {
+  const rows = [
+    { label: 'Sessions', event: FUNNEL_EVENTS.landed },
+    { label: 'Clicked CTA', event: FUNNEL_EVENTS.ctaClick },
+    { label: 'Started quote', event: FUNNEL_EVENTS.quizStart },
+    { label: 'In service area', event: FUNNEL_EVENTS.zipInArea },
+    { label: 'Leads', event: FUNNEL_EVENTS.contactSubmit },
+  ];
+  const count = (variant: 'a' | 'b', event: string) =>
+    counts[funnelEvent(VARIANTS[variant].funnel, event)] ?? 0;
+
+  const sessionsA = count('a', FUNNEL_EVENTS.landed);
+  const sessionsB = count('b', FUNNEL_EVENTS.landed);
+  const leadsA = count('a', FUNNEL_EVENTS.contactSubmit);
+  const leadsB = count('b', FUNNEL_EVENTS.contactSubmit);
+  const rateA = rate(leadsA, sessionsA);
+  const rateB = rate(leadsB, sessionsB);
+  const lift =
+    rateA !== null && rateB !== null && rateA > 0 ? rateB / rateA - 1 : null;
+  const confidence = confidenceTheyDiffer(leadsA, sessionsA, leadsB, sessionsB);
+
+  return (
+    <section aria-labelledby='ab-heading' className='mt-10'>
+      <h2 id='ab-heading' className='text-xl font-bold'>
+        Home page A/B test
+      </h2>
+      <p className='mt-1 text-sm text-black/50'>
+        Visitors to / are split between the two designs. Percentages are of
+        each variant&rsquo;s own sessions.
+      </p>
+
+      <div className='mt-4 overflow-x-auto rounded-lg border border-black/10 bg-white'>
+        <table className='w-full min-w-[520px] text-sm'>
+          <thead>
+            <tr className='border-b border-black/10 text-left text-black/50'>
+              <th className='px-4 py-3 font-semibold'>Step</th>
+              <th className='px-4 py-3 font-semibold'>{VARIANTS.a.label}</th>
+              <th className='px-4 py-3 font-semibold'>{VARIANTS.b.label}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((row, i) => {
+              const a = count('a', row.event);
+              const b = count('b', row.event);
+              return (
+                <tr key={row.event} className='border-b border-black/5'>
+                  <td className='px-4 py-3 font-semibold'>{row.label}</td>
+                  {[
+                    [a, sessionsA],
+                    [b, sessionsB],
+                  ].map(([value, sessions], j) => (
+                    <td key={j} className='px-4 py-3 tabular-nums'>
+                      {value.toLocaleString()}
+                      {i > 0 ? (
+                        <span className='ml-2 text-black/40'>
+                          {formatRate(rate(value, sessions))}
+                        </span>
+                      ) : null}
+                    </td>
+                  ))}
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+
+      <div className='mt-4 grid grid-cols-1 gap-4 sm:grid-cols-3'>
+        <Stat
+          label='Lead rate A vs B'
+          value={`${formatRate(rateA)} / ${formatRate(rateB)}`}
+          note='Leads ÷ sessions'
+        />
+        <Stat
+          label='B vs A'
+          value={
+            lift === null ? '—' : `${lift >= 0 ? '+' : ''}${(lift * 100).toFixed(0)}%`
+          }
+          note='Relative change in lead rate'
+        />
+        <Stat
+          label='Confidence'
+          value={confidence === null ? '—' : `${(confidence * 100).toFixed(0)}%`}
+          note={
+            confidence === null
+              ? 'Needs 30+ sessions per variant'
+              : confidence >= 0.95
+                ? 'Likely a real difference'
+                : 'Not conclusive yet — keep it running'
+          }
+        />
+      </div>
+    </section>
   );
 }

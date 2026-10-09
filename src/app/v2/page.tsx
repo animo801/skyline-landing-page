@@ -6,7 +6,7 @@ import ReviewMarquee from '@/components/v2/ReviewMarquee';
 import ShowcaseRotator from '@/components/v2/ShowcaseRotator';
 import Snowfall from '@/components/v2/Snowfall';
 import { FUNNEL_EVENTS, funnelEvent } from '@/lib/funnel';
-import heroHouse from '../../../public/images/image.jpg';
+import heroHouse from '../../../public/images/showcase/everyday-accent.webp';
 
 // Alternate landing page modeled on a single-scroll layout: dark nighttime
 // hero, rotating lighting showcase, the quote quiz in a card on the page,
@@ -34,7 +34,7 @@ export default function LandingPageV2() {
           fill
           priority
           sizes='100vw'
-          className='object-cover object-[center_30%]'
+          className='object-cover object-[center_40%]'
         />
         {/* Darkens the photo into a night-sky backdrop so white text reads
             clearly, fading to solid at the bottom. */}

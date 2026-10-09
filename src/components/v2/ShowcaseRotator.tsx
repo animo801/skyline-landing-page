@@ -50,6 +50,7 @@ export default function ShowcaseRotator() {
             fill
             sizes='(min-width: 768px) 672px, 100vw'
             aria-hidden={i !== index || undefined}
+            style={{ objectPosition: photo.position }}
             className={`object-cover transition-opacity duration-1000 motion-reduce:transition-none ${
               i === index ? 'opacity-100' : 'opacity-0'
             }`}

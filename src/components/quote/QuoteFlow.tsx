@@ -217,6 +217,9 @@ function QuoteFlowInner({ layout = 'page', funnel = 'home' }: QuoteFlowProps) {
       ...contact,
       eventId,
       eventSourceUrl: window.location.href,
+      // Which landing page (A/B variant) the lead came from. The URL alone
+      // can't tell, since both variants are served at "/".
+      funnel,
     });
 
     // A dropped mobile connection makes fetch throw before any response, so
