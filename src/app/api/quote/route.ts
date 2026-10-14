@@ -86,6 +86,7 @@ export async function POST(request: Request) {
     eventId,
     eventSourceUrl,
     funnel,
+    test,
   } = body;
   // /virtual-quote prices the home, so it also requires coverage and size.
   const isEstimator = funnel === 'virtual-quote';
@@ -175,6 +176,16 @@ export async function POST(request: Request) {
         }
       : {}),
   };
+
+  // Test submissions (?test=1 on the site) are checked and priced like real
+  // ones but never reach GHL or Meta.
+  if (test === true) {
+    log.info('Test submission — not sent to GHL or Meta', {
+      fields: Object.keys(payload),
+      estimate,
+    });
+    return Response.json(estimate ? { ok: true, estimate } : { ok: true });
+  }
 
   log.info('Forwarding to GHL webhook', {
     // Only the webhook's trailing ID, to confirm which webhook is in use.

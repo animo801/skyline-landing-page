@@ -1,4 +1,5 @@
 import { randomId } from './uuid';
+import { isTestMode } from './testMode';
 
 const SESSION_KEY = 'funnel_session_id';
 const VISITOR_KEY = 'funnel_visitor_id';
@@ -19,6 +20,8 @@ function getId(storage: Storage, key: string): string {
 // click still gets recorded even though the page navigates away right
 // after. Never throws — tracking must not break the page.
 export function logFunnelEvent(eventName: string) {
+  // Test visits (?test=1) stay out of the /funnel stats.
+  if (isTestMode()) return;
   try {
     const sessionId = getId(sessionStorage, SESSION_KEY);
     let visitorId = sessionId;

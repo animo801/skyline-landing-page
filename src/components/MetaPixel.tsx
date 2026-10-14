@@ -1,9 +1,10 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { usePathname } from 'next/navigation';
 import Script from 'next/script';
 import { META_PIXEL_ID } from '@/lib/meta';
+import { isTestMode } from '@/lib/testMode';
 
 declare global {
   interface Window {
@@ -19,12 +20,20 @@ export function trackMetaEvent(
   params?: Record<string, unknown>,
   options?: { eventID?: string }
 ) {
+  if (isTestMode()) return;
   window.fbq?.('track', event, params ?? {}, options ?? {});
 }
 
 export default function MetaPixel() {
   const pathname = usePathname();
   const isFirstRender = useRef(true);
+  // Decided after mount (test mode lives in the URL and sessionStorage), so
+  // test visits (?test=1) never load the Pixel at all.
+  const [enabled, setEnabled] = useState(false);
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- reads browser-only state once on mount
+    setEnabled(!isTestMode());
+  }, []);
 
   // The base snippet tracks the initial PageView; client-side navigations
   // after that don't reload the page, so track them here. Quote steps only
@@ -38,7 +47,7 @@ export default function MetaPixel() {
   }, [pathname]);
 
   // The internal /funnel dashboard shouldn't report page views to Meta.
-  if (pathname.startsWith('/funnel')) return null;
+  if (!enabled || pathname.startsWith('/funnel')) return null;
 
   return (
     <Script id='meta-pixel' strategy='afterInteractive'>

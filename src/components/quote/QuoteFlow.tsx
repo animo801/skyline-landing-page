@@ -24,6 +24,7 @@ import { QuestionCountProvider, QuoteLayoutProvider } from './QuoteLayout';
 import type { QuoteLayout } from './QuoteLayout';
 import { logFunnelEvent } from '@/lib/funnel-client';
 import { randomId } from '@/lib/uuid';
+import { isTestMode } from '@/lib/testMode';
 
 type StepId =
   | 'zip'
@@ -179,6 +180,13 @@ function QuoteFlowInner({
   // range shown always matches the one sent to GHL.
   const [estimate, setEstimate] = useState<Estimate | null>(null);
 
+  // ?test=1: run the whole flow without sending anything to GHL or Meta.
+  const [testMode, setTestMode] = useState(false);
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- reads browser-only state once on mount
+    setTestMode(isTestMode());
+  }, []);
+
   // Answers live in memory, so a refresh (or returning to a bookmarked
   // ?step=3) lands mid-flow with nothing answered. Send them back to the
   // start rather than letting them submit an incomplete quote.
@@ -302,6 +310,8 @@ function QuoteFlowInner({
       // Which landing page the lead came from. The URL alone can't tell,
       // since both A/B variants are served at "/".
       funnel,
+      // The server checks and prices it, but sends nothing to GHL or Meta.
+      test: isTestMode() || undefined,
     });
 
     // A dropped mobile connection makes fetch throw before any response, so
@@ -358,6 +368,14 @@ function QuoteFlowInner({
 
   const steps = (
     <>
+      {testMode && (
+        <p
+          role='status'
+          className='mb-4 rounded-lg bg-amber-100 px-4 py-2 text-center text-sm font-bold text-amber-900'
+        >
+          Test mode: submissions aren&rsquo;t sent to GHL or Meta.
+        </p>
+      )}
       {stepId === 'zip' && (
         <ZipCodeStep
           defaultZip={answers.zip}
