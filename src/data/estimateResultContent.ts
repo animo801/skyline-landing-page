@@ -54,5 +54,5 @@ export const WHATS_INCLUDED: {
 export const WARRANTY = {
   heading: 'Lifetime Warranty on all installs',
   detail:
-    'Too many lighting companies install and disappear, leaving homeowners on their own when something stops working. Not us. We stand behind every install, covering both the components and the labor to service your Skyline system.',
+    'Too many lighting companies install and disappear. Not us. We stand behind every install, covering both the components and the labor to service your Skyline system.',
 };
