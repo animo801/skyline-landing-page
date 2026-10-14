@@ -200,7 +200,7 @@ export default function EstimateResultStep({
         <ShieldIcon />
         <h2
           id='warranty-heading'
-          className='mt-4 text-2xl leading-[1.1] font-black text-balance'
+          className='mt-4 text-[31px] leading-[1.1] font-black text-balance'
         >
           {WARRANTY.heading}
         </h2>
