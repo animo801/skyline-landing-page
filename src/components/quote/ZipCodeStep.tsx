@@ -14,9 +14,11 @@ function normalizeZip(value: string): string {
 
 export default function ZipCodeStep({
   defaultZip = '',
+  questionNumber = 1,
   onComplete,
 }: {
   defaultZip?: string;
+  questionNumber?: number;
   onComplete: (zip: string) => void;
 }) {
   const [zip, setZip] = useState(() => normalizeZip(defaultZip));
@@ -33,7 +35,7 @@ export default function ZipCodeStep({
   return (
     <>
       <QuestionHeading
-        number={1}
+        number={questionNumber}
         hint='So we can confirm you’re in our service area'
       >
         What zip code is your home located in?

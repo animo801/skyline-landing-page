@@ -4,6 +4,7 @@ import { connection } from 'next/server';
 import { Redis } from '@upstash/redis';
 import type { FunnelId } from '@/lib/funnel';
 import { VARIANTS } from '@/lib/abTest';
+import { COVERAGE_OPTIONS } from '@/lib/estimate';
 import {
   addDays,
   answerEvent,
@@ -32,7 +33,8 @@ export const metadata: Metadata = {
 // (prefixed per page) and the first steps' wording differ.
 function buildStages(
   funnel: FunnelId,
-  copy: { landed: string; cta: string; started: string }
+  copy: { landed: string; cta: string; started: string },
+  { estimator = false }: { estimator?: boolean } = {}
 ): FunnelStage[] {
   const e = (eventName: string) => funnelEvent(funnel, eventName);
   return [
@@ -66,8 +68,26 @@ function buildStages(
         label: o.label,
       })),
     },
+    // The /virtual-quote estimator also asks coverage and square footage.
+    ...(estimator
+      ? [
+          {
+            title: 'Q3. Coverage',
+            nodes: COVERAGE_OPTIONS.map((o) => ({
+              event: e(answerEvent('coverage', o.value)),
+              label: o.label,
+            })),
+          },
+          {
+            title: 'Q4. Square footage',
+            nodes: [
+              { event: e(FUNNEL_EVENTS.sqftEntered), label: 'Entered home size' },
+            ],
+          },
+        ]
+      : []),
     {
-      title: 'Q3. Timeline',
+      title: estimator ? 'Q5. Timeline' : 'Q3. Timeline',
       nodes: TIMELINE_OPTIONS.map((o) => ({
         event: e(answerEvent('timeline', o.value)),
         label: o.label,
@@ -104,6 +124,20 @@ const PAGES = [
       cta: 'Clicked the hero button',
       started: 'Saw the quote card',
     }),
+  },
+  {
+    key: 'virtual-quote',
+    path: '/virtual-quote',
+    description: 'Instant estimate (standalone)',
+    stages: buildStages(
+      'virtual-quote',
+      {
+        landed: 'Landed on /virtual-quote',
+        cta: 'Clicked “Get my instant estimate”',
+        started: 'Opened the estimate form',
+      },
+      { estimator: true }
+    ),
   },
 ];
 

@@ -6,50 +6,95 @@ import QuoteHeader from './QuoteHeader';
 import ZipCodeStep from './ZipCodeStep';
 import HomeStoriesStep from './HomeStoriesStep';
 import type { HomeStories } from './HomeStoriesStep';
+import CoverageStep from './CoverageStep';
+import SquareFootageStep from './SquareFootageStep';
 import TimelineStep from './TimelineStep';
 import type { Timeline } from './TimelineStep';
 import ContactInfoStep from './ContactInfoStep';
 import type { ContactInfo } from './ContactInfoStep';
 import ThankYouStep from './ThankYouStep';
+import EstimateResultStep from './EstimateResultStep';
 import OutOfAreaStep from './OutOfAreaStep';
 import { isZipInServiceArea } from '@/data/serviceAreaZipCodes';
 import { trackMetaEvent } from '@/components/MetaPixel';
 import { answerEvent, FUNNEL_EVENTS, funnelEvent } from '@/lib/funnel';
 import type { FunnelId } from '@/lib/funnel';
-import { QuoteLayoutProvider } from './QuoteLayout';
+import type { Coverage, Estimate } from '@/lib/estimate';
+import { QuestionCountProvider, QuoteLayoutProvider } from './QuoteLayout';
 import type { QuoteLayout } from './QuoteLayout';
 import { logFunnelEvent } from '@/lib/funnel-client';
 import { randomId } from '@/lib/uuid';
 
-// 5 states: 4 questions (steps 0-3) plus the thank-you screen (step 4).
-// Progress reflects how many questions have been answered so far, so it
-// fills from empty at the first question to full once the quiz is done.
-const TOTAL_STEPS = 5;
-const LAST_STEP = TOTAL_STEPS - 1;
+type StepId =
+  | 'zip'
+  | 'stories'
+  | 'coverage'
+  | 'sqft'
+  | 'timeline'
+  | 'contact'
+  | 'done';
+
+// The order of steps for each kind of quote. Every entry but the last is a
+// question; 'done' is the closing screen (thank-you, or the estimate). The
+// step index lives in the URL (?step=N).
+const FLOWS = {
+  // The original 4-question quote (/quote and the /v2 card).
+  standard: ['zip', 'stories', 'timeline', 'contact', 'done'],
+  // /virtual-quote: adds coverage and square footage to price the home,
+  // and ends on an instant estimate.
+  estimator: [
+    'zip',
+    'stories',
+    'coverage',
+    'sqft',
+    'timeline',
+    'contact',
+    'done',
+  ],
+} as const satisfies Record<string, readonly StepId[]>;
+
+export type QuoteQuestions = keyof typeof FLOWS;
 
 // The zip step can also branch to a dead-end "out of area" screen instead
 // of advancing, so step isn't purely numeric.
 type Step = number | 'out-of-area';
 
-function progressPercentForStep(step: Step): number {
-  if (step === 'out-of-area') return 0;
-  return (step / LAST_STEP) * 100;
-}
-
 type QuoteAnswers = {
   zip: string;
   stories: HomeStories | null;
+  coverage: Coverage | null;
+  squareFeet: number | null;
   timeline: Timeline | null;
   contact: ContactInfo | null;
 };
 
-function stepFromSearchParams(searchParams: URLSearchParams): Step {
+function stepFromSearchParams(
+  searchParams: URLSearchParams,
+  lastStep: number
+): Step {
   const raw = searchParams.get('step');
   if (raw === 'out-of-area') return 'out-of-area';
   const parsed = raw === null ? 0 : Number(raw);
-  return Number.isInteger(parsed) && parsed >= 0 && parsed <= LAST_STEP
+  return Number.isInteger(parsed) && parsed >= 0 && parsed <= lastStep
     ? parsed
     : 0;
+}
+
+function isAnswered(id: StepId, answers: QuoteAnswers): boolean {
+  switch (id) {
+    case 'zip':
+      return Boolean(answers.zip);
+    case 'stories':
+      return answers.stories !== null;
+    case 'coverage':
+      return answers.coverage !== null;
+    case 'sqft':
+      return answers.squareFeet !== null;
+    case 'timeline':
+      return answers.timeline !== null;
+    default:
+      return true;
+  }
 }
 
 // Tells the server about a submission that failed in the browser, so it
@@ -91,9 +136,18 @@ type QuoteFlowProps = {
   layout?: QuoteLayout;
   // Which landing page's funnel on /funnel these steps count toward.
   funnel?: FunnelId;
+  // Which set of questions to ask (see FLOWS).
+  questions?: QuoteQuestions;
+  // Where the logo links in the full-page layout (the page they came from).
+  homeHref?: string;
 };
 
-function QuoteFlowInner({ layout = 'page', funnel = 'home' }: QuoteFlowProps) {
+function QuoteFlowInner({
+  layout = 'page',
+  funnel = 'home',
+  questions = 'standard',
+  homeHref = '/',
+}: QuoteFlowProps) {
   const router = useRouter();
   const isCard = layout === 'card';
   const cardRef = useRef<HTMLDivElement>(null);
@@ -102,27 +156,36 @@ function QuoteFlowInner({ layout = 'page', funnel = 'home' }: QuoteFlowProps) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
+  const flow: readonly StepId[] = FLOWS[questions];
+  const lastStep = flow.length - 1;
+  const questionCount = lastStep;
+
   // The current question is derived from the URL rather than local state,
   // so the browser's back/forward buttons move between questions instead
   // of leaving the quote flow entirely.
-  const step = stepFromSearchParams(searchParams);
+  const step = stepFromSearchParams(searchParams, lastStep);
+  const stepId: StepId | 'out-of-area' =
+    step === 'out-of-area' ? step : flow[step];
 
   const [answers, setAnswers] = useState<QuoteAnswers>({
     zip: '',
     stories: null,
+    coverage: null,
+    squareFeet: null,
     timeline: null,
     contact: null,
   });
+  // Set from the server's response once the lead is submitted, so the
+  // range shown always matches the one sent to GHL.
+  const [estimate, setEstimate] = useState<Estimate | null>(null);
 
   // Answers live in memory, so a refresh (or returning to a bookmarked
   // ?step=3) lands mid-flow with nothing answered. Send them back to the
   // start rather than letting them submit an incomplete quote.
   const missingEarlierAnswer =
     typeof step === 'number' &&
-    step < LAST_STEP &&
-    ((step >= 1 && !answers.zip) ||
-      (step >= 2 && !answers.stories) ||
-      (step >= 3 && !answers.timeline));
+    step < lastStep &&
+    flow.slice(0, step).some((id) => !isAnswered(id, answers));
   useEffect(() => {
     if (missingEarlierAnswer) router.replace(pathname, { scroll: false });
   }, [missingEarlierAnswer, router, pathname]);
@@ -177,11 +240,15 @@ function QuoteFlowInner({ layout = 'page', funnel = 'home' }: QuoteFlowProps) {
     });
   };
 
+  const goToStepAfter = (id: StepId) => goToStep(flow.indexOf(id) + 1);
+  const questionNumber = (id: StepId) => flow.indexOf(id) + 1;
+
   const handleZipComplete = (zip: string) => {
     setAnswers((prev) => ({ ...prev, zip }));
     const inArea = isZipInServiceArea(zip);
     track(inArea ? FUNNEL_EVENTS.zipInArea : FUNNEL_EVENTS.zipOutOfArea);
-    goToStep(inArea ? 1 : 'out-of-area');
+    if (inArea) goToStepAfter('zip');
+    else goToStep('out-of-area');
   };
 
   const handleRetryZip = () => {
@@ -192,18 +259,30 @@ function QuoteFlowInner({ layout = 'page', funnel = 'home' }: QuoteFlowProps) {
   const handleStoriesSelect = (stories: HomeStories) => {
     setAnswers((prev) => ({ ...prev, stories }));
     track(answerEvent('stories', stories));
-    goToStep(2);
+    goToStepAfter('stories');
+  };
+
+  const handleCoverageSelect = (coverage: Coverage) => {
+    setAnswers((prev) => ({ ...prev, coverage }));
+    track(answerEvent('coverage', coverage));
+    goToStepAfter('coverage');
+  };
+
+  const handleSquareFeetComplete = (squareFeet: number) => {
+    setAnswers((prev) => ({ ...prev, squareFeet }));
+    track(FUNNEL_EVENTS.sqftEntered);
+    goToStepAfter('sqft');
   };
 
   const handleTimelineSelect = (timeline: Timeline) => {
     setAnswers((prev) => ({ ...prev, timeline }));
     track(answerEvent('timeline', timeline));
-    goToStep(3);
+    goToStepAfter('timeline');
   };
 
   // Sends the completed quote to our API (which forwards it to GHL) before
-  // showing the thank-you screen. Throws on failure so the form can show
-  // an error and let the user retry.
+  // showing the closing screen. Throws on failure so the form can show an
+  // error and let the user retry.
   const handleContactSubmit = async (contact: ContactInfo) => {
     setAnswers((prev) => ({ ...prev, contact }));
 
@@ -214,11 +293,14 @@ function QuoteFlowInner({ layout = 'page', funnel = 'home' }: QuoteFlowProps) {
       zip: answers.zip,
       stories: answers.stories,
       timeline: answers.timeline,
+      // Only asked by the estimator; the server prices the home from these.
+      coverage: answers.coverage ?? undefined,
+      squareFeet: answers.squareFeet ?? undefined,
       ...contact,
       eventId,
       eventSourceUrl: window.location.href,
-      // Which landing page (A/B variant) the lead came from. The URL alone
-      // can't tell, since both variants are served at "/".
+      // Which landing page the lead came from. The URL alone can't tell,
+      // since both A/B variants are served at "/".
       funnel,
     });
 
@@ -252,8 +334,14 @@ function QuoteFlowInner({ layout = 'page', funnel = 'home' }: QuoteFlowProps) {
       throw new Error(`Quote submission failed: ${res?.status}`);
     }
 
-    // The lead is already in GHL at this point, so tracking problems must
-    // never surface as a "something went wrong" error.
+    // The lead is already in GHL at this point, so neither reading the
+    // estimate nor tracking may surface as a "something went wrong" error.
+    try {
+      const data: { estimate?: Estimate } = await res.json();
+      if (data.estimate) setEstimate(data.estimate);
+    } catch {
+      // The closing screen handles a missing estimate.
+    }
     try {
       // The custom "Vercel LP Form Submit" event is sent server-side only
       // (see sendMetaLead), so it never needs browser/server deduplication.
@@ -265,51 +353,87 @@ function QuoteFlowInner({ layout = 'page', funnel = 'home' }: QuoteFlowProps) {
       // Ignore — tracking is best-effort.
     }
 
-    goToStep(4);
+    goToStepAfter('contact');
   };
 
   const steps = (
     <>
-      {step === 0 && (
-        <ZipCodeStep defaultZip={answers.zip} onComplete={handleZipComplete} />
+      {stepId === 'zip' && (
+        <ZipCodeStep
+          defaultZip={answers.zip}
+          questionNumber={questionNumber('zip')}
+          onComplete={handleZipComplete}
+        />
       )}
-      {step === 1 && (
+      {stepId === 'stories' && (
         <HomeStoriesStep
           defaultValue={answers.stories}
+          questionNumber={questionNumber('stories')}
           onSelect={handleStoriesSelect}
         />
       )}
-      {step === 2 && (
+      {stepId === 'coverage' && (
+        <CoverageStep
+          defaultValue={answers.coverage}
+          questionNumber={questionNumber('coverage')}
+          onSelect={handleCoverageSelect}
+        />
+      )}
+      {stepId === 'sqft' && (
+        <SquareFootageStep
+          defaultValue={answers.squareFeet}
+          questionNumber={questionNumber('sqft')}
+          onComplete={handleSquareFeetComplete}
+        />
+      )}
+      {stepId === 'timeline' && (
         <TimelineStep
           defaultValue={answers.timeline}
+          questionNumber={questionNumber('timeline')}
           onSelect={handleTimelineSelect}
         />
       )}
-      {step === 3 && (
+      {stepId === 'contact' && (
         <ContactInfoStep
           defaultValue={answers.contact ?? undefined}
+          questionNumber={questionNumber('contact')}
+          submitLabel={
+            questions === 'estimator' ? 'See my estimate' : 'Get my free quote'
+          }
           onSubmit={handleContactSubmit}
         />
       )}
-      {step === 4 && (
-        <ThankYouStep firstName={answers.contact?.firstName ?? ''} />
-      )}
-      {step === 'out-of-area' && <OutOfAreaStep onRetry={handleRetryZip} />}
+      {stepId === 'done' &&
+        (questions === 'estimator' ? (
+          <EstimateResultStep
+            firstName={answers.contact?.firstName ?? ''}
+            estimate={estimate}
+          />
+        ) : (
+          <ThankYouStep firstName={answers.contact?.firstName ?? ''} />
+        ))}
+      {stepId === 'out-of-area' && <OutOfAreaStep onRetry={handleRetryZip} />}
     </>
   );
 
+  // Progress reflects how many questions have been answered so far, so it
+  // fills from empty at the first question to full on the closing screen.
+  const progressPercent = step === 'out-of-area' ? 0 : (step / lastStep) * 100;
+
   return (
     <QuoteLayoutProvider value={layout}>
-      {isCard ? (
-        <div ref={cardRef} className='scroll-mt-4'>
-          {steps}
-        </div>
-      ) : (
-        <main className='mx-auto min-h-screen w-full max-w-md bg-white px-6 pt-4'>
-          <QuoteHeader progressPercent={progressPercentForStep(step)} />
-          {steps}
-        </main>
-      )}
+      <QuestionCountProvider value={questionCount}>
+        {isCard ? (
+          <div ref={cardRef} className='scroll-mt-4'>
+            {steps}
+          </div>
+        ) : (
+          <main className='mx-auto min-h-screen w-full max-w-md bg-white px-6 pt-4'>
+            <QuoteHeader progressPercent={progressPercent} homeHref={homeHref} />
+            {steps}
+          </main>
+        )}
+      </QuestionCountProvider>
     </QuoteLayoutProvider>
   );
 }

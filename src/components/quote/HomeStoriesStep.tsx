@@ -14,9 +14,11 @@ const OPTIONS: { value: HomeStories; label: string }[] = [
 
 export default function HomeStoriesStep({
   defaultValue = null,
+  questionNumber = 2,
   onSelect,
 }: {
   defaultValue?: HomeStories | null;
+  questionNumber?: number;
   onSelect: (value: HomeStories) => void;
 }) {
   const [selected, setSelected] = useState<HomeStories | null>(defaultValue);
@@ -29,7 +31,7 @@ export default function HomeStoriesStep({
   return (
     <>
       <QuestionHeading
-        number={2}
+        number={questionNumber}
         hint='So we can estimate how much roofline we’ll be lighting'
       >
         How many stories is your home?

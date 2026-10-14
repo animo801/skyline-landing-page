@@ -1,5 +1,6 @@
 import type { HomeStories } from '@/components/quote/HomeStoriesStep';
 import type { Timeline } from '@/components/quote/TimelineStep';
+import { COVERAGE_OPTIONS } from './estimate';
 
 // Every event the funnel tracks. The /api/funnel-event route only accepts
 // names from this list, so a typo (or a stranger poking the endpoint)
@@ -14,13 +15,15 @@ export const FUNNEL_EVENTS = {
   quizStart: 'quiz_start',
   zipInArea: 'zip_in_area',
   zipOutOfArea: 'zip_out_of_area',
+  // /virtual-quote only: entered their home's square footage.
+  sqftEntered: 'sqft_entered',
   contactSubmit: 'contact_submit',
 } as const;
 
 // Each landing page has its own funnel. The original page ('home') uses the
 // bare event names (so its existing history keeps counting); other pages
 // prefix them, e.g. `v2:landed`, so /funnel can show them side by side.
-export const FUNNELS = ['home', 'v2'] as const;
+export const FUNNELS = ['home', 'v2', 'virtual-quote'] as const;
 export type FunnelId = (typeof FUNNELS)[number];
 
 export function funnelEvent(funnel: FunnelId, eventName: string) {
@@ -40,7 +43,10 @@ export const TIMELINE_OPTIONS: { value: Timeline; label: string }[] = [
   { value: 'next-year', label: 'Sometime next year' },
 ];
 
-export function answerEvent(question: 'stories' | 'timeline', value: string) {
+export function answerEvent(
+  question: 'stories' | 'timeline' | 'coverage',
+  value: string
+) {
   return `answer:${question}:${value}`;
 }
 
@@ -64,6 +70,7 @@ const BASE_EVENTS = [
   ...Object.values(FUNNEL_EVENTS),
   ...STORIES_OPTIONS.map((o) => answerEvent('stories', o.value)),
   ...TIMELINE_OPTIONS.map((o) => answerEvent('timeline', o.value)),
+  ...COVERAGE_OPTIONS.map((o) => answerEvent('coverage', o.value)),
 ];
 
 export const ALLOWED_FUNNEL_EVENTS = new Set<string>(

@@ -1,10 +1,6 @@
 'use client';
 
-import { useQuoteLayout } from './QuoteLayout';
-
-// Zip, home stories, timeline, contact info. Update if a question is added
-// or removed.
-const TOTAL_QUESTIONS = 4;
+import { useQuestionCount, useQuoteLayout } from './QuoteLayout';
 
 export default function QuestionHeading({
   number,
@@ -17,6 +13,7 @@ export default function QuestionHeading({
   children: React.ReactNode;
 }) {
   const layout = useQuoteLayout();
+  const TOTAL_QUESTIONS = useQuestionCount();
 
   if (layout === 'card') {
     return (

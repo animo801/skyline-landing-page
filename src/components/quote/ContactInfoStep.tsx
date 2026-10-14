@@ -36,9 +36,13 @@ const labelClasses = 'mb-1 block text-base font-bold text-black/70';
 
 export default function ContactInfoStep({
   defaultValue,
+  questionNumber = 4,
+  submitLabel = 'Get my free quote',
   onSubmit,
 }: {
   defaultValue?: ContactInfo;
+  questionNumber?: number;
+  submitLabel?: string;
   onSubmit: (contact: ContactInfo) => Promise<void>;
 }) {
   const [firstName, setFirstName] = useState(defaultValue?.firstName ?? '');
@@ -78,7 +82,7 @@ export default function ContactInfoStep({
   return (
     <>
       <QuestionHeading
-        number={4}
+        number={questionNumber}
         hint='So our team can reach out with your estimate'
       >
         Almost done — how can we reach you?
@@ -152,7 +156,7 @@ export default function ContactInfoStep({
           disabled={submitting}
           className='mt-2 h-14 w-full bg-skyline-blue text-base font-bold text-white transition-colors hover:bg-skyline-blue/90 disabled:opacity-70'
         >
-          {submitting ? 'Sending…' : 'Get my free quote'}
+          {submitting ? 'Sending…' : submitLabel}
         </button>
         {submitError && (
           <p className='text-sm text-red-600' role='alert'>

@@ -2,6 +2,14 @@ import { after } from 'next/server';
 import { isZipInServiceArea } from '@/data/serviceAreaZipCodes';
 import { sendMetaLead } from '@/lib/metaConversionsApi';
 import { VARIANTS } from '@/lib/abTest';
+import {
+  calculateEstimate,
+  COVERAGE_OPTIONS,
+  formatEstimate,
+  isCoverage,
+  isValidSquareFeet,
+} from '@/lib/estimate';
+import type { Estimate } from '@/lib/estimate';
 
 // Quote submissions are forwarded server-side to the GoHighLevel inbound
 // webhook so the webhook URL never ships in the client bundle.
@@ -29,6 +37,7 @@ function timelineLabel(timeline: string): string | null {
 }
 
 function landingPageLabel(funnel: unknown): string {
+  if (funnel === 'virtual-quote') return 'Virtual Quote';
   const variant = Object.values(VARIANTS).find((v) => v.funnel === funnel);
   return variant?.label ?? 'unknown';
 }
@@ -65,8 +74,21 @@ export async function POST(request: Request) {
     return Response.json({ error: 'Invalid JSON' }, { status: 400 });
   }
 
-  const { zip, stories, timeline, firstName, email, phone, eventId, eventSourceUrl, funnel } =
-    body;
+  const {
+    zip,
+    stories,
+    timeline,
+    coverage,
+    squareFeet,
+    firstName,
+    email,
+    phone,
+    eventId,
+    eventSourceUrl,
+    funnel,
+  } = body;
+  // /virtual-quote prices the home, so it also requires coverage and size.
+  const isEstimator = funnel === 'virtual-quote';
   const log = createLogger(
     isNonEmptyString(eventId) ? eventId.slice(0, 8) : crypto.randomUUID().slice(0, 8)
   );
@@ -75,6 +97,8 @@ export async function POST(request: Request) {
     zip,
     stories,
     timeline,
+    coverage,
+    squareFeet,
     email: maskEmail(email),
     hasFirstName: isNonEmptyString(firstName),
     hasPhone: isNonEmptyString(phone),
@@ -100,6 +124,8 @@ export async function POST(request: Request) {
     !isNonEmptyString(firstName) && 'firstName missing',
     !isNonEmptyString(email) && 'email missing',
     !isNonEmptyString(phone) && 'phone missing',
+    isEstimator && !isCoverage(coverage) && 'coverage missing/invalid',
+    isEstimator && !isValidSquareFeet(squareFeet) && 'squareFeet missing/invalid',
   ].filter(Boolean);
 
   // The individual checks repeat what `problems` covers so TypeScript can
@@ -117,6 +143,17 @@ export async function POST(request: Request) {
     return Response.json({ error: 'Invalid submission' }, { status: 400 });
   }
 
+  // Priced on the server (not trusted from the browser) so the range in
+  // GHL is always the one the visitor was shown.
+  const estimate: Estimate | null =
+    isEstimator && isCoverage(coverage) && isValidSquareFeet(squareFeet)
+      ? calculateEstimate({
+          squareFeet,
+          coverage,
+          stories: stories === 'two' ? 'two' : 'single',
+        })
+      : null;
+
   const payload = {
     first_name: firstName.trim(),
     email: email.trim(),
@@ -128,6 +165,15 @@ export async function POST(request: Request) {
     // Which landing page design the lead came from, so the A/B variants
     // can be compared in GHL too.
     landing_page: landingPageLabel(funnel),
+    ...(estimate && isCoverage(coverage) && isValidSquareFeet(squareFeet)
+      ? {
+          coverage: COVERAGE_OPTIONS.find((o) => o.value === coverage)?.label,
+          square_feet: squareFeet,
+          estimate_low: estimate.low,
+          estimate_high: estimate.high,
+          estimate_range: formatEstimate(estimate),
+        }
+      : {}),
   };
 
   log.info('Forwarding to GHL webhook', {
@@ -190,5 +236,5 @@ export async function POST(request: Request) {
     log.info('No eventId on submission — skipping Meta CAPI');
   }
 
-  return Response.json({ ok: true });
+  return Response.json(estimate ? { ok: true, estimate } : { ok: true });
 }

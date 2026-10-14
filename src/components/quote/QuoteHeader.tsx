@@ -1,10 +1,16 @@
 import Image from 'next/image';
 import Link from 'next/link';
 
-export default function QuoteHeader({ progressPercent }: { progressPercent: number }) {
+export default function QuoteHeader({
+  progressPercent,
+  homeHref = '/',
+}: {
+  progressPercent: number;
+  homeHref?: string;
+}) {
   return (
     <>
-      <Link href='/' className='block w-35 sm:w-40'>
+      <Link href={homeHref} className='block w-35 sm:w-40'>
         <Image
           src='/images/skyline-logo-dark.svg'
           alt='Skyline Smart Lighting'

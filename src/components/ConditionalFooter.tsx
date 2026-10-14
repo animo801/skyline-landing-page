@@ -6,7 +6,7 @@ import Footer from './Footer';
 // Quote flow steps render as full-screen, app-like questionnaire screens
 // (per the Figma design) with no site chrome, so the marketing footer is
 // hidden there. The internal /funnel dashboard doesn't need it either.
-const HIDDEN_ON_PREFIXES = ['/quote', '/funnel'];
+const HIDDEN_ON_PREFIXES = ['/quote', '/funnel', '/virtual-quote/estimate'];
 
 export default function ConditionalFooter() {
   const pathname = usePathname();

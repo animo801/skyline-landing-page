@@ -9,9 +9,11 @@ export type Timeline = 'before-month-end' | 'before-dec-15' | 'next-year';
 
 export default function TimelineStep({
   defaultValue = null,
+  questionNumber = 3,
   onSelect,
 }: {
   defaultValue?: Timeline | null;
+  questionNumber?: number;
   onSelect: (value: Timeline) => void;
 }) {
   const [selected, setSelected] = useState<Timeline | null>(defaultValue);
@@ -33,7 +35,7 @@ export default function TimelineStep({
 
   return (
     <>
-      <QuestionHeading number={3} hint='So we can plan your install date'>
+      <QuestionHeading number={questionNumber} hint='So we can plan your install date'>
         How soon are you hoping to have lights installed?
       </QuestionHeading>
 

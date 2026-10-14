@@ -15,3 +15,13 @@ export const QuoteLayoutProvider = QuoteLayoutContext.Provider;
 export function useQuoteLayout() {
   return useContext(QuoteLayoutContext);
 }
+
+// How many questions the current flow asks, for "Step N of M". The
+// standard quote asks 4; the /virtual-quote estimator asks more.
+const QuestionCountContext = createContext(4);
+
+export const QuestionCountProvider = QuestionCountContext.Provider;
+
+export function useQuestionCount() {
+  return useContext(QuestionCountContext);
+}
