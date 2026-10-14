@@ -1,5 +1,3 @@
-import type { Coverage } from '@/lib/estimate';
-
 // Content for the /virtual-quote estimate results screen.
 
 // "What's included" — drawn from what Skyline customers describe in their
@@ -59,31 +57,3 @@ export const WARRANTY = {
   detail:
     'The warranty covers both the components and the labor required to service your Skyline installation.',
 };
-
-// A recent install shown as "a home like yours", picked by their answers.
-// Uses the showcase photos in public/images/showcase/.
-export function examplePhotoFor({
-  stories,
-  coverage,
-}: {
-  stories: 'single' | 'two' | null;
-  coverage: Coverage | null;
-}): { src: string; alt: string; position?: string } {
-  if (coverage === 'full') {
-    return {
-      src: '/images/showcase/warm-white.webp',
-      alt: 'Farmhouse outlined in warm white permanent lights along every roofline',
-      position: 'center 24%',
-    };
-  }
-  if (stories === 'two') {
-    return {
-      src: '/images/showcase/everyday-accent.webp',
-      alt: 'Two-story brick home with warm white accent lights under each gable',
-    };
-  }
-  return {
-    src: '/images/showcase/valentines-day.webp',
-    alt: 'Brick home with permanent lights along the front roofline',
-  };
-}

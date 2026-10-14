@@ -4,11 +4,8 @@ import Image from 'next/image';
 import { COVERAGE_OPTIONS, formatUsd } from '@/lib/estimate';
 import type { Coverage, Estimate } from '@/lib/estimate';
 import { STORIES_OPTIONS, TIMELINE_OPTIONS } from '@/lib/funnel';
-import {
-  examplePhotoFor,
-  WARRANTY,
-  WHATS_INCLUDED,
-} from '@/data/estimateResultContent';
+import { WARRANTY, WHATS_INCLUDED } from '@/data/estimateResultContent';
+import InstallCarousel from './InstallCarousel';
 import { useQuoteLayout } from './QuoteLayout';
 import type { HomeStories } from './HomeStoriesStep';
 import type { Timeline } from './TimelineStep';
@@ -82,7 +79,6 @@ export default function EstimateResultStep({
   answers: EstimateAnswers;
 }) {
   const isCard = useQuoteLayout() === 'card';
-  const photo = examplePhotoFor(answers);
 
   const summary = [
     { label: 'Zip code', value: answers.zip },
@@ -152,22 +148,15 @@ export default function EstimateResultStep({
         </p>
       </section>
 
-      {/* A home like theirs */}
-      <section>
-        <h2 className={sectionHeading}>A home like yours</h2>
-        <div className='relative mt-3 aspect-[3/2] overflow-hidden rounded-xl'>
-          <Image
-            src={photo.src}
-            alt={photo.alt}
-            fill
-            sizes='(min-width: 448px) 400px, 100vw'
-            style={{ objectPosition: photo.position }}
-            className='object-cover'
-          />
+      {/* Recent installs: an auto-scrolling, swipeable strip that starts in
+          line with the page and runs off the right edge of the screen. The
+          left padding lives on the section itself so it's measured against
+          the page column, matching the gutter. */}
+      <section className='mr-[calc(50%-50vw)] min-w-0'>
+        <h2 className={sectionHeading}>Recent Skyline installs</h2>
+        <div className='mt-3'>
+          <InstallCarousel />
         </div>
-        <p className='mt-2 text-sm text-black/50'>
-          A recent Skyline Smart Lighting install.
-        </p>
       </section>
 
       {/* What's included: a full-width grey band. The negative margins
