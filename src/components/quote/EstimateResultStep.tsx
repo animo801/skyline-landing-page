@@ -171,7 +171,7 @@ export default function EstimateResultStep({
       </section>
 
       {/* What's included */}
-      <section>
+      <section className='rounded-2xl bg-[#f3f4f6] p-6'>
         <h2 className={sectionHeading}>What&rsquo;s included</h2>
         <ul className='mt-4 flex flex-col gap-4'>
           {WHATS_INCLUDED.map((item) => (
