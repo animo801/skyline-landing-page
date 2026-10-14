@@ -170,8 +170,10 @@ export default function EstimateResultStep({
         </p>
       </section>
 
-      {/* What's included */}
-      <section className='rounded-2xl bg-[#f3f4f6] p-6'>
+      {/* What's included: a full-width grey band. The negative margins
+          stretch it to the screen edges while the matching padding keeps its
+          content lined up with the rest of the page. */}
+      <section className='mx-[calc(50%-50vw)] bg-[#f3f4f6] px-[calc(50vw-50%)] py-10'>
         <h2 className={sectionHeading}>What&rsquo;s included</h2>
         <ul className='mt-4 flex flex-col gap-4'>
           {WHATS_INCLUDED.map((item) => (
