@@ -175,16 +175,28 @@ export default function EstimateResultStep({
           content lined up with the rest of the page. */}
       <section className='mx-[calc(50%-50vw)] bg-[#f3f4f6] px-[calc(50vw-50%)] py-10'>
         <h2 className={sectionHeading}>What&rsquo;s included</h2>
-        <ul className='mt-4 flex flex-col gap-4'>
+        <ul className='mt-4 grid grid-cols-2 gap-x-3 gap-y-5'>
           {WHATS_INCLUDED.map((item) => (
-            <li key={item.title} className='flex gap-3'>
-              <CheckIcon />
-              <div>
-                <p className='font-bold text-[#111]'>{item.title}</p>
-                <p className='text-sm leading-relaxed text-black/60'>
-                  {item.detail}
+            <li key={item.title} className='min-w-0'>
+              <div className='relative aspect-[4/3] overflow-hidden rounded-lg'>
+                <Image
+                  src={item.image.src}
+                  alt={item.image.alt}
+                  fill
+                  sizes='(min-width: 448px) 200px, 50vw'
+                  style={{ objectPosition: item.image.position }}
+                  className='object-cover'
+                />
+              </div>
+              <div className='mt-2 flex items-start gap-1.5'>
+                <CheckIcon />
+                <p className='text-sm leading-snug font-bold text-[#111]'>
+                  {item.title}
                 </p>
               </div>
+              <p className='mt-1 text-xs leading-relaxed text-black/60'>
+                {item.detail}
+              </p>
             </li>
           ))}
         </ul>
