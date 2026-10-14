@@ -188,25 +188,31 @@ export default function EstimateResultStep({
         </ul>
       </section>
 
-      {/* Warranty */}
-      <section className='rounded-2xl bg-skyline-blue/[0.06] p-6 ring-1 ring-skyline-blue/15'>
-        <div className='flex items-center gap-3'>
+      {/* Warranty — styled after the warranty block on Skyline's site */}
+      <section aria-labelledby='warranty-heading'>
+        <div className='relative mr-2 mb-2'>
+          <div
+            aria-hidden='true'
+            className='absolute inset-0 translate-x-2 translate-y-2 bg-[#f3ff63]'
+          />
+          <div className='relative border-[3px] border-[#111] bg-white px-6 py-5'>
+            <p className='text-[52px] leading-none font-black tracking-tight text-skyline-blue'>
+              {WARRANTY.term}
+            </p>
+            <p className='mt-3 text-sm font-black tracking-wide text-[#111] uppercase'>
+              {WARRANTY.coverage}
+            </p>
+          </div>
+        </div>
+        <div className='mt-6 flex items-center gap-3'>
           <ShieldIcon />
-          <h2 className={sectionHeading}>{WARRANTY.heading}</h2>
+          <h2 id='warranty-heading' className={sectionHeading}>
+            {WARRANTY.heading}
+          </h2>
         </div>
         <p className='mt-2 text-sm leading-relaxed text-black/60'>
-          {WARRANTY.intro}
+          {WARRANTY.detail}
         </p>
-        <ul className='mt-4 flex flex-col gap-3'>
-          {WARRANTY.items.map((item) => (
-            <li key={item.title} className='rounded-xl bg-white p-4 ring-1 ring-black/5'>
-              <p className='font-bold text-[#111]'>{item.title}</p>
-              <p className='text-sm leading-relaxed text-black/60'>
-                {item.detail}
-              </p>
-            </li>
-          ))}
-        </ul>
       </section>
 
       <p className='text-center text-xs leading-relaxed text-black/40'>

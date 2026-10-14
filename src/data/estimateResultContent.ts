@@ -25,25 +25,14 @@ export const WHATS_INCLUDED: { title: string; detail: string }[] = [
   },
 ];
 
-// PLACEHOLDER — replace the [bracketed] values with the client's actual
-// warranty terms before this page gets real traffic.
+// From the warranty section of Skyline's own website. Keep this in sync
+// with what they publish there.
 export const WARRANTY = {
-  heading: 'Backed by our warranty',
-  intro: '[Placeholder: one or two sentences on how Skyline stands behind every install.]',
-  items: [
-    {
-      title: '[X]-year product warranty',
-      detail: '[Placeholder: what’s covered on the lights, controller and power supply.]',
-    },
-    {
-      title: '[X]-year workmanship guarantee',
-      detail: '[Placeholder: what’s covered on the installation itself.]',
-    },
-    {
-      title: '[Service promise]',
-      detail: '[Placeholder: e.g. how quickly the team responds to a service call.]',
-    },
-  ],
+  term: 'Lifetime',
+  coverage: 'Parts + labor warranty',
+  heading: 'Permanent means supported.',
+  detail:
+    'The warranty covers both the components and the labor required to service your Skyline installation.',
 };
 
 // A recent install shown as "a home like yours", picked by their answers.
