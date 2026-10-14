@@ -5,7 +5,7 @@ import Image from 'next/image';
 import { SHOWCASE_PHOTOS } from '@/data/showcasePhotos';
 
 // Pixels per second the strip drifts on its own.
-const AUTO_SPEED = 30;
+const AUTO_SPEED = 15;
 // After a swipe ends, wait this long (for momentum) before auto-scrolling
 // picks up again from wherever the swipe left it.
 const RESUME_DELAY_MS = 1200;
@@ -115,7 +115,7 @@ export default function InstallCarousel() {
                 aria-hidden={isDuplicate || undefined}
                 className='w-64 shrink-0 pr-3 sm:w-72'
               >
-                <div className='relative aspect-[4/3] overflow-hidden rounded-xl'>
+                <div className='relative aspect-[4/3] overflow-hidden rounded-md'>
                   <Image
                     src={photo.src}
                     alt={isDuplicate ? '' : photo.alt}

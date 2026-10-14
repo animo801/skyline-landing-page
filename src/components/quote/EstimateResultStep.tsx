@@ -40,7 +40,7 @@ function CheckIcon() {
 
 function ShieldIcon() {
   return (
-    <svg aria-hidden='true' viewBox='0 0 24 24' className='size-10 text-white'>
+    <svg aria-hidden='true' viewBox='0 0 24 24' className='size-14 text-white'>
       <path
         d='M12 3l7 3v5c0 4.5-3 8.3-7 10-4-1.7-7-5.5-7-10V6l7-3z'
         fill='currentColor'
@@ -148,12 +148,12 @@ export default function EstimateResultStep({
         </p>
       </section>
 
-      {/* Recent installs: an auto-scrolling, swipeable strip that starts in
-          line with the page and runs off the right edge of the screen. The
-          left padding lives on the section itself so it's measured against
-          the page column, matching the gutter. */}
-      <section className='mr-[calc(50%-50vw)] min-w-0'>
-        <h2 className={sectionHeading}>Recent Skyline installs</h2>
+      {/* Recent installs: centered heading over an auto-scrolling, swipeable
+          strip that runs edge to edge across the screen. */}
+      <section className='mx-[calc(50%-50vw)] min-w-0'>
+        <h2 className={`${sectionHeading} text-center`}>
+          Recent Skyline installs
+        </h2>
         <div className='mt-3'>
           <InstallCarousel />
         </div>
@@ -200,7 +200,7 @@ export default function EstimateResultStep({
         <ShieldIcon />
         <h2
           id='warranty-heading'
-          className='mt-4 text-[28px] leading-tight font-black text-balance'
+          className='mt-4 text-2xl leading-[1.1] font-black text-balance'
         >
           {WARRANTY.heading}
         </h2>
