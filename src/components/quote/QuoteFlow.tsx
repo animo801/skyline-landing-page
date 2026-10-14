@@ -408,6 +408,7 @@ function QuoteFlowInner({
           <EstimateResultStep
             firstName={answers.contact?.firstName ?? ''}
             estimate={estimate}
+            answers={answers}
           />
         ) : (
           <ThankYouStep firstName={answers.contact?.firstName ?? ''} />
