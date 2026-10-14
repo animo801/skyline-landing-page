@@ -40,11 +40,11 @@ function CheckIcon() {
 
 function ShieldIcon() {
   return (
-    <svg aria-hidden='true' viewBox='0 0 24 24' className='size-6 text-skyline-blue'>
+    <svg aria-hidden='true' viewBox='0 0 24 24' className='size-10 text-white'>
       <path
         d='M12 3l7 3v5c0 4.5-3 8.3-7 10-4-1.7-7-5.5-7-10V6l7-3z'
         fill='currentColor'
-        opacity='0.15'
+        opacity='0.2'
       />
       <path
         d='M12 3l7 3v5c0 4.5-3 8.3-7 10-4-1.7-7-5.5-7-10V6l7-3z'
@@ -191,29 +191,20 @@ export default function EstimateResultStep({
         </ul>
       </section>
 
-      {/* Warranty — styled after the warranty block on Skyline's site */}
-      <section aria-labelledby='warranty-heading'>
-        <div className='relative mr-2 mb-2'>
-          <div
-            aria-hidden='true'
-            className='absolute inset-0 translate-x-2 translate-y-2 bg-[#f3ff63]'
-          />
-          <div className='relative border-[3px] border-[#111] bg-white px-6 py-5'>
-            <p className='text-[52px] leading-none font-black tracking-tight text-skyline-blue'>
-              {WARRANTY.term}
-            </p>
-            <p className='mt-3 text-sm font-black tracking-wide text-[#111] uppercase'>
-              {WARRANTY.coverage}
-            </p>
-          </div>
-        </div>
-        <div className='mt-6 flex items-center gap-3'>
-          <ShieldIcon />
-          <h2 id='warranty-heading' className={sectionHeading}>
-            {WARRANTY.heading}
-          </h2>
-        </div>
-        <p className='mt-2 text-sm leading-relaxed text-black/60'>
+      {/* Warranty: full-width Skyline-blue band, like the grey band above.
+          -mt-8 cancels the column's gap so the two bands meet. */}
+      <section
+        aria-labelledby='warranty-heading'
+        className='mx-[calc(50%-50vw)] -mt-8 bg-skyline-blue px-[calc(50vw-50%)] py-10 text-white'
+      >
+        <ShieldIcon />
+        <h2
+          id='warranty-heading'
+          className='mt-4 text-[28px] leading-tight font-black text-balance'
+        >
+          {WARRANTY.heading}
+        </h2>
+        <p className='mt-3 text-base leading-relaxed text-white/85'>
           {WARRANTY.detail}
         </p>
       </section>

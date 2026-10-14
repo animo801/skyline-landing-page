@@ -48,12 +48,11 @@ export const WHATS_INCLUDED: {
   },
 ];
 
-// From the warranty section of Skyline's own website. Keep this in sync
-// with what they publish there.
+// Based on the warranty section of Skyline's own website ("lifetime parts
+// + labor"; "covers both the components and the labor required to service
+// your Skyline installation"). Keep in sync with what they publish there.
 export const WARRANTY = {
-  term: 'Lifetime',
-  coverage: 'Parts + labor warranty',
-  heading: 'Permanent means supported.',
+  heading: 'Every install includes a lifetime parts and labor warranty.',
   detail:
-    'The warranty covers both the components and the labor required to service your Skyline installation.',
+    'Too many lighting companies install and disappear, leaving homeowners on their own when something stops working. Not us. We stand behind every install, covering both the components and the labor to service your Skyline system.',
 };
