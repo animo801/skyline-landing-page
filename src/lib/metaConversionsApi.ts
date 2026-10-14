@@ -1,6 +1,5 @@
 import { createHash } from 'node:crypto';
 import {
-  META_FORM_SUBMIT_EVENT,
   META_PIXEL_ID,
   customEventIdFor,
 } from './meta';
@@ -16,7 +15,7 @@ function readCookie(cookieHeader: string | null, name: string) {
   return match ? decodeURIComponent(match[1]) : undefined;
 }
 
-// Sends a server-side Lead, plus the custom form-submit event, to Meta's
+// Sends a server-side Lead, plus the page's custom event, to Meta's
 // Conversions API. The Lead shares its event ID with the browser Pixel's Lead
 // so Meta deduplicates the two; the custom event is server-only. User data is
 // normalized and SHA-256 hashed per Meta's customer information parameters.
@@ -28,6 +27,7 @@ export async function sendMetaLead({
   email,
   phone,
   zip,
+  customEventName,
   log,
 }: {
   log: {
@@ -41,6 +41,8 @@ export async function sendMetaLead({
   email: string;
   phone: string;
   zip: string;
+  // The page-specific custom event sent alongside Lead (see lib/meta.ts).
+  customEventName: string;
 }) {
   const accessToken = process.env.META_CAPI_ACCESS_TOKEN;
   if (!accessToken) {
@@ -86,7 +88,7 @@ export async function sendMetaLead({
           { ...baseEvent, event_name: 'Lead', event_id: eventId },
           {
             ...baseEvent,
-            event_name: META_FORM_SUBMIT_EVENT,
+            event_name: customEventName,
             event_id: customEventIdFor(eventId),
           },
         ],

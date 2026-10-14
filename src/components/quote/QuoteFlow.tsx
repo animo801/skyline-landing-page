@@ -353,8 +353,9 @@ function QuoteFlowInner({
       // The closing screen handles a missing estimate.
     }
     try {
-      // The custom "Vercel LP Form Submit" event is sent server-side only
-      // (see sendMetaLead), so it never needs browser/server deduplication.
+      // The page's custom event ("Vercel LP Form Submit", or "Free quote
+      // submitted on Vercel site" for /virtual-quote) is sent server-side
+      // only (see sendMetaLead), so it never needs deduplication.
       trackMetaEvent('Lead', {}, { eventID: eventId });
       // Logged only once the lead reached GHL, so "Converted" on /funnel
       // matches real leads.

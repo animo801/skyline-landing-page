@@ -1,6 +1,7 @@
 import { after } from 'next/server';
 import { isZipInServiceArea } from '@/data/serviceAreaZipCodes';
 import { sendMetaLead } from '@/lib/metaConversionsApi';
+import { customEventNameForFunnel } from '@/lib/meta';
 import { VARIANTS } from '@/lib/abTest';
 import {
   calculateEstimate,
@@ -236,6 +237,7 @@ export async function POST(request: Request) {
         email,
         phone,
         zip,
+        customEventName: customEventNameForFunnel(funnel),
         log,
       }).catch((error) =>
         log.error('Meta CAPI threw', {
