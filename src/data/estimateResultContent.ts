@@ -30,10 +30,10 @@ export const WHATS_INCLUDED: {
     title: 'Control from your phone',
     detail:
       'Change colors and scenes from the app — we’ll help you set it up before we leave.',
-    // Stand-in until there's a photo of the app itself.
     image: {
-      src: '/images/showcase/fourth-of-july.webp',
-      alt: 'Home lit red, white and blue, set from the app',
+      src: '/images/included/app-control.png',
+      alt: 'Phone showing the Skyline app’s lighting presets in front of a lit home',
+      position: 'center 40%',
     },
   },
   {
