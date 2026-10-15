@@ -66,6 +66,15 @@ export function viewsName(landedEvent: string) {
 // sessions and days) that landed on any of the landing pages.
 export const VISITORS_NAME = 'visitors';
 
+// Zip codes entered by visitors who were turned away as outside the service
+// area, across all pages: a sorted set of zip → number of sessions that
+// entered it (all-time and per day, like the event sets). Lets /funnel show
+// which zips are being turned away, to spot gaps in the service-area list.
+export const OUT_OF_AREA_ZIPS_NAME = 'out_of_area_zips';
+// "sessionId:zip" pairs already counted, so retrying the same zip in one
+// session isn't counted twice.
+export const OUT_OF_AREA_ZIP_SESSIONS_NAME = 'out_of_area_zip_sessions';
+
 const BASE_EVENTS = [
   ...Object.values(FUNNEL_EVENTS),
   ...STORIES_OPTIONS.map((o) => answerEvent('stories', o.value)),

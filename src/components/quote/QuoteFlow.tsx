@@ -152,8 +152,8 @@ function QuoteFlowInner({
   const router = useRouter();
   const isCard = layout === 'card';
   const cardRef = useRef<HTMLDivElement>(null);
-  const track = (eventName: string) =>
-    logFunnelEvent(funnelEvent(funnel, eventName));
+  const track = (eventName: string, details?: { zip?: string }) =>
+    logFunnelEvent(funnelEvent(funnel, eventName), details);
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
@@ -254,7 +254,9 @@ function QuoteFlowInner({
   const handleZipComplete = (zip: string) => {
     setAnswers((prev) => ({ ...prev, zip }));
     const inArea = isZipInServiceArea(zip);
-    track(inArea ? FUNNEL_EVENTS.zipInArea : FUNNEL_EVENTS.zipOutOfArea);
+    if (inArea) track(FUNNEL_EVENTS.zipInArea);
+    // The zip is recorded so /funnel can list which zips get turned away.
+    else track(FUNNEL_EVENTS.zipOutOfArea, { zip });
     if (inArea) goToStepAfter('zip');
     else goToStep('out-of-area');
   };

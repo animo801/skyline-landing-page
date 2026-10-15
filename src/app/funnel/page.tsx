@@ -18,7 +18,9 @@ import {
   TIMELINE_OPTIONS,
   viewsName,
   VISITORS_NAME,
+  OUT_OF_AREA_ZIPS_NAME,
 } from '@/lib/funnel';
+import { isZipInServiceArea } from '@/data/serviceAreaZipCodes';
 import { FunnelChart, type FunnelCounts, type FunnelStage } from './FunnelChart';
 
 // Password-protected by proxy.ts (FUNNEL_PASSWORD) and kept out of search
@@ -202,6 +204,39 @@ function resolveRange(params: Record<string, string | string[] | undefined>): {
   };
 }
 
+type ZipCount = { zip: string; sessions: number };
+
+// The zips turned-away visitors entered in the range, most common first.
+async function loadOutOfAreaZips(range: Range): Promise<ZipCount[]> {
+  const redis = Redis.fromEnv();
+  const top = { rev: true, withScores: true } as const;
+  let flat: unknown[];
+
+  if (!range) {
+    flat = await redis.zrange<unknown[]>(funnelKey(OUT_OF_AREA_ZIPS_NAME), 0, 99, top);
+  } else {
+    // Sum the daily sets into a throwaway key, read it, then delete it.
+    const keys = daysBetween(range.from, range.to).map((d) =>
+      funnelKey(OUT_OF_AREA_ZIPS_NAME, d)
+    );
+    const tmp = `skyline:funnel:tmp:${crypto.randomUUID()}:zips`;
+    const results = await redis
+      .pipeline()
+      .zunionstore(tmp, keys.length, keys)
+      .zrange(tmp, 0, 99, top)
+      .del(tmp)
+      .exec<[number, unknown[], number]>();
+    flat = results[1];
+  }
+
+  // withScores returns [member, score, member, score, …].
+  const rows: ZipCount[] = [];
+  for (let i = 0; i + 1 < flat.length; i += 2) {
+    rows.push({ zip: String(flat[i]), sessions: Number(flat[i + 1]) });
+  }
+  return rows;
+}
+
 function daysBetween(from: string, to: string) {
   const days: string[] = [];
   for (let d = from; d <= to; d = addDays(d, 1)) days.push(d);
@@ -284,9 +319,13 @@ export default async function FunnelPage({
       : { range: activeKey === 'all' ? undefined : activeKey };
 
   let metrics: Metrics = { counts: {}, views: 0, visitors: 0 };
+  let outOfAreaZips: ZipCount[] = [];
   let error: string | null = null;
   try {
-    metrics = await loadMetrics(range);
+    [metrics, outOfAreaZips] = await Promise.all([
+      loadMetrics(range),
+      loadOutOfAreaZips(range),
+    ]);
   } catch (err) {
     error = err instanceof Error ? err.message : String(err);
   }
@@ -454,6 +493,8 @@ export default async function FunnelPage({
           <FunnelChart stages={page.stages} counts={counts} />
         </div>
 
+        <OutOfAreaZips rows={outOfAreaZips} />
+
         <p className='mt-10 text-xs text-black/40'>
           Days run midnight to midnight, {FUNNEL_TIMEZONE} time.
         </p>
@@ -619,6 +660,75 @@ function AbComparison({ counts }: { counts: FunnelCounts }) {
           }
         />
       </div>
+    </section>
+  );
+}
+
+/**
+ * Zips entered by visitors who were turned away as outside the service
+ * area, across all pages. Flags any that are on the service-area list now
+ * (i.e. were added after those visitors were turned away).
+ */
+function OutOfAreaZips({ rows }: { rows: ZipCount[] }) {
+  const total = rows.reduce((sum, r) => sum + r.sessions, 0);
+  return (
+    <section aria-labelledby='zips-heading' className='mt-12'>
+      <h2 id='zips-heading' className='text-xl font-bold'>
+        Out-of-area zip codes
+      </h2>
+      <p className='mt-1 text-sm text-black/50'>
+        Zips entered by visitors who were told they&rsquo;re outside the
+        service area, all pages combined. Each visitor counts once per zip.
+        Tracking started October 15, 2026.
+      </p>
+
+      {rows.length === 0 ? (
+        <p className='mt-4 rounded-lg border border-dashed border-black/15 bg-white px-4 py-6 text-center text-sm text-black/50'>
+          No out-of-area zips in this date range yet.
+        </p>
+      ) : (
+        <div className='mt-4 overflow-x-auto rounded-lg border border-black/10 bg-white'>
+          <table className='w-full min-w-[420px] text-sm'>
+            <thead>
+              <tr className='border-b border-black/10 text-left text-black/50'>
+                <th className='px-4 py-3 font-semibold'>Zip code</th>
+                <th className='px-4 py-3 font-semibold'>Visitors</th>
+                <th className='px-4 py-3 font-semibold'>Share</th>
+                <th className='px-4 py-3 font-semibold'>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((row) => {
+                const nowInArea = isZipInServiceArea(row.zip);
+                return (
+                  <tr key={row.zip} className='border-b border-black/5'>
+                    <td className='px-4 py-3 font-semibold tabular-nums'>
+                      {row.zip}
+                    </td>
+                    <td className='px-4 py-3 tabular-nums'>
+                      {row.sessions.toLocaleString()}
+                    </td>
+                    <td className='px-4 py-3 text-black/50 tabular-nums'>
+                      {total > 0
+                        ? `${((row.sessions / total) * 100).toFixed(0)}%`
+                        : '—'}
+                    </td>
+                    <td className='px-4 py-3'>
+                      {nowInArea ? (
+                        <span className='rounded-full bg-green-100 px-2 py-0.5 text-xs font-semibold text-green-800'>
+                          Now in service area
+                        </span>
+                      ) : (
+                        <span className='text-black/40'>Outside service area</span>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
     </section>
   );
 }

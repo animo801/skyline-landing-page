@@ -19,7 +19,12 @@ function getId(storage: Storage, key: string): string {
 // Best-effort log to the funnel on /funnel. Uses sendBeacon so a CTA
 // click still gets recorded even though the page navigates away right
 // after. Never throws — tracking must not break the page.
-export function logFunnelEvent(eventName: string) {
+export function logFunnelEvent(
+  eventName: string,
+  // Extra data for specific events — currently just the zip a visitor
+  // entered when they were turned away as outside the service area.
+  details?: { zip?: string }
+) {
   // Test visits (?test=1) stay out of the /funnel stats.
   if (isTestMode()) return;
   try {
@@ -30,7 +35,12 @@ export function logFunnelEvent(eventName: string) {
     } catch {
       // localStorage blocked — fall back to the session id.
     }
-    const payload = JSON.stringify({ sessionId, visitorId, eventName });
+    const payload = JSON.stringify({
+      sessionId,
+      visitorId,
+      eventName,
+      ...details,
+    });
     if (navigator.sendBeacon) {
       navigator.sendBeacon(
         '/api/funnel-event',
