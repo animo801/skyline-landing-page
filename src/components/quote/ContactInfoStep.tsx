@@ -3,16 +3,18 @@
 import { useState } from 'react';
 import type { FormEvent } from 'react';
 import QuestionHeading from './QuestionHeading';
+import { isZipInServiceArea } from '@/data/serviceAreaZipCodes';
 
 export type ContactInfo = {
   firstName: string;
   lastName: string;
   email: string;
   phone: string;
-  // Street, city and state; the zip comes from the zip question.
   street: string;
   city: string;
   state: ServiceState;
+  // Pre-filled from the zip question; editable here in case of a typo.
+  zip: string;
 };
 
 // The service area covers North and South Carolina.
@@ -58,7 +60,7 @@ export default function ContactInfoStep({
   onSubmit,
 }: {
   defaultValue?: ContactInfo;
-  // The zip from the zip question, shown with the address.
+  // The zip from the zip question, pre-filled into the address.
   zip: string;
   questionNumber?: number;
   submitLabel?: string;
@@ -75,6 +77,7 @@ export default function ContactInfoStep({
   const [state, setState] = useState<ServiceState>(
     defaultValue?.state ?? stateForZip(zip)
   );
+  const [addressZip, setAddressZip] = useState(defaultValue?.zip ?? zip);
   const [touched, setTouched] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState(false);
@@ -83,6 +86,8 @@ export default function ContactInfoStep({
   const isLastNameValid = lastName.trim().length > 0;
   const isStreetValid = street.trim().length >= 3;
   const isCityValid = city.trim().length > 0;
+  const isZipComplete = /^\d{5}$/.test(addressZip);
+  const isZipInArea = isZipComplete && isZipInServiceArea(addressZip);
   const isEmailValid = EMAIL_PATTERN.test(email);
   const isPhoneValid = isValidPhone(phone);
 
@@ -97,7 +102,8 @@ export default function ContactInfoStep({
       !isEmailValid ||
       !isPhoneValid ||
       !isStreetValid ||
-      !isCityValid
+      !isCityValid ||
+      !isZipInArea
     ) {
       return;
     }
@@ -113,6 +119,7 @@ export default function ContactInfoStep({
         street: street.trim(),
         city: city.trim(),
         state,
+        zip: addressZip,
       });
     } catch {
       setSubmitError(true);
@@ -225,23 +232,24 @@ export default function ContactInfoStep({
           )}
         </div>
 
-        <div className='grid grid-cols-[1fr_auto] gap-3'>
-          <div className='min-w-0'>
-            <label htmlFor='city' className={labelClasses}>
-              City
-            </label>
-            <input
-              id='city'
-              type='text'
-              autoComplete='address-level2'
-              value={city}
-              onChange={(event) => setCity(event.target.value)}
-              className={inputClasses}
-            />
-            {touched && !isCityValid && (
-              <p className={errorClasses}>Enter your city.</p>
-            )}
-          </div>
+        <div>
+          <label htmlFor='city' className={labelClasses}>
+            City
+          </label>
+          <input
+            id='city'
+            type='text'
+            autoComplete='address-level2'
+            value={city}
+            onChange={(event) => setCity(event.target.value)}
+            className={inputClasses}
+          />
+          {touched && !isCityValid && (
+            <p className={errorClasses}>Enter your city.</p>
+          )}
+        </div>
+
+        <div className='grid grid-cols-[auto_1fr] gap-3'>
           <div>
             <label htmlFor='state' className={labelClasses}>
               State
@@ -276,8 +284,32 @@ export default function ContactInfoStep({
               </svg>
             </div>
           </div>
+          <div className='min-w-0'>
+            <label htmlFor='addressZip' className={labelClasses}>
+              Zip code
+            </label>
+            <input
+              id='addressZip'
+              type='text'
+              inputMode='numeric'
+              autoComplete='postal-code'
+              maxLength={10}
+              value={addressZip}
+              onChange={(event) =>
+                setAddressZip(event.target.value.replace(/\D/g, '').slice(0, 5))
+              }
+              className={inputClasses}
+            />
+          </div>
         </div>
-        <p className='-mt-2 text-sm text-black/50'>Zip code: {zip}</p>
+        {/* Checked as they type, since a corrected zip skips the zip question. */}
+        {(touched || isZipComplete) && !isZipInArea && (
+          <p className={`${errorClasses} -mt-2`}>
+            {isZipComplete
+              ? 'That zip is outside our service area (within an hour of Charlotte). Double-check it, or give us a call.'
+              : 'Enter your 5-digit zip code.'}
+          </p>
+        )}
 
         <button
           type='submit'

@@ -294,18 +294,19 @@ function QuoteFlowInner({
   // showing the closing screen. Throws on failure so the form can show an
   // error and let the user retry.
   const handleContactSubmit = async (contact: ContactInfo) => {
-    setAnswers((prev) => ({ ...prev, contact }));
+    // The contact step lets them fix a typo'd zip, so its zip wins.
+    setAnswers((prev) => ({ ...prev, zip: contact.zip, contact }));
 
     // Shared by the browser Pixel and the server-side Conversions API event
     // so Meta counts the lead once.
     const eventId = randomId();
     const body = JSON.stringify({
-      zip: answers.zip,
       stories: answers.stories,
       timeline: answers.timeline,
       // Only asked by the estimator; the server prices the home from these.
       coverage: answers.coverage ?? undefined,
       squareFeet: answers.squareFeet ?? undefined,
+      // Includes the zip, which they may have corrected on the contact step.
       ...contact,
       eventId,
       eventSourceUrl: window.location.href,
