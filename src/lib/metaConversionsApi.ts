@@ -24,6 +24,9 @@ export async function sendMetaLead({
   eventId,
   eventSourceUrl,
   firstName,
+  lastName,
+  city,
+  state,
   email,
   phone,
   zip,
@@ -38,6 +41,9 @@ export async function sendMetaLead({
   eventId: string;
   eventSourceUrl: string | undefined;
   firstName: string;
+  lastName: string;
+  city: string;
+  state: string;
   email: string;
   phone: string;
   zip: string;
@@ -69,6 +75,11 @@ export async function sendMetaLead({
       em: [sha256(email.trim().toLowerCase())],
       ph: [sha256(normalizedPhone)],
       fn: [sha256(firstName.trim().toLowerCase())],
+      ln: [sha256(lastName.trim().toLowerCase())],
+      // Meta's format: city lowercase with no spaces or punctuation, state
+      // as a lowercase two-letter code.
+      ct: [sha256(city.toLowerCase().replace(/[^a-z]/g, ''))],
+      st: [sha256(state.trim().toLowerCase())],
       zp: [sha256(zip.trim())],
       country: [sha256('us')],
       client_ip_address: clientIp,

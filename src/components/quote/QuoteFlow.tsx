@@ -417,6 +417,7 @@ function QuoteFlowInner({
       {stepId === 'contact' && (
         <ContactInfoStep
           defaultValue={answers.contact ?? undefined}
+          zip={answers.zip}
           questionNumber={questionNumber('contact')}
           submitLabel={
             questions === 'estimator' ? 'See my estimate' : 'Get my free quote'

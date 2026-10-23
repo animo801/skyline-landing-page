@@ -43,6 +43,10 @@ function landingPageLabel(funnel: unknown): string {
   return variant?.label ?? 'unknown';
 }
 
+function isServiceState(value: unknown): value is 'NC' | 'SC' {
+  return value === 'NC' || value === 'SC';
+}
+
 function isNonEmptyString(value: unknown): value is string {
   return typeof value === 'string' && value.trim().length > 0;
 }
@@ -82,8 +86,12 @@ export async function POST(request: Request) {
     coverage,
     squareFeet,
     firstName,
+    lastName,
     email,
     phone,
+    street,
+    city,
+    state,
     eventId,
     eventSourceUrl,
     funnel,
@@ -103,6 +111,10 @@ export async function POST(request: Request) {
     squareFeet,
     email: maskEmail(email),
     hasFirstName: isNonEmptyString(firstName),
+    hasLastName: isNonEmptyString(lastName),
+    hasStreet: isNonEmptyString(street),
+    city,
+    state,
     hasPhone: isNonEmptyString(phone),
     eventId,
     eventSourceUrl,
@@ -124,6 +136,10 @@ export async function POST(request: Request) {
     !storiesLabel && 'stories missing/invalid',
     !timelineText && 'timeline missing/invalid',
     !isNonEmptyString(firstName) && 'firstName missing',
+    !isNonEmptyString(lastName) && 'lastName missing',
+    !isNonEmptyString(street) && 'street missing',
+    !isNonEmptyString(city) && 'city missing',
+    !isServiceState(state) && 'state missing/invalid',
     !isNonEmptyString(email) && 'email missing',
     !isNonEmptyString(phone) && 'phone missing',
     isEstimator && !isCoverage(coverage) && 'coverage missing/invalid',
@@ -138,6 +154,10 @@ export async function POST(request: Request) {
     !storiesLabel ||
     !timelineText ||
     !isNonEmptyString(firstName) ||
+    !isNonEmptyString(lastName) ||
+    !isNonEmptyString(street) ||
+    !isNonEmptyString(city) ||
+    !isServiceState(state) ||
     !isNonEmptyString(email) ||
     !isNonEmptyString(phone)
   ) {
@@ -158,9 +178,14 @@ export async function POST(request: Request) {
 
   const payload = {
     first_name: firstName.trim(),
+    last_name: lastName.trim(),
     email: email.trim(),
     phone: phone.trim(),
+    address1: street.trim(),
+    city: city.trim(),
+    state,
     postal_code: zip.trim(),
+    full_address: `${street.trim()}, ${city.trim()}, ${state} ${zip.trim()}`,
     home_stories: storiesLabel,
     install_timeline: timelineText,
     source: 'Vercel Landing Page Form Submit',
@@ -234,6 +259,9 @@ export async function POST(request: Request) {
         eventSourceUrl:
           typeof eventSourceUrl === 'string' ? eventSourceUrl : undefined,
         firstName,
+        lastName,
+        city,
+        state,
         email,
         phone,
         zip,
