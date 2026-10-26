@@ -1,34 +1,41 @@
-// Instant estimate for /virtual-quote, from the client's guidance:
-//   - ~2,000 sq ft, front of the house only: $3,000–$5,000
-//   - ~4,000 sq ft, full wraparound: $9,000–$12,000
-//   - 4,000+ sq ft full wrap: $10,000+, up to ~$15,000
-//   - a second story adds about 30%
-// The per-square-foot rates below reproduce those ranges. Used by both the
-// browser and /api/quote, so the range a visitor sees is always the one
-// sent to GHL. Adjust the numbers here to change every estimate.
+// Instant estimate for /virtual-quote. Pricing from the client:
+//   - Front of the house, per square foot of home:
+//       single-story $0.80–$1.10, two-story $1.00–$1.30
+//   - Adding the back costs 65% of the front price on top
+//   - Adding the sides costs another 80% of the front price on top
+//   - The range shown is never wider than $2,000
+// Used by both the browser and /api/quote, so the range a visitor sees is
+// always the one sent to GHL. Adjust the numbers here to change every
+// estimate.
 export const ESTIMATE_PRICING = {
-  // Dollars per square foot of home, low and high end of the range.
-  perSqFt: {
-    front: { low: 1.5, high: 2.5 },
-    full: { low: 2.25, high: 3 },
+  // Front-of-house dollars per square foot, low and high end of the range.
+  frontPerSqFt: {
+    single: { low: 0.8, high: 1.1 },
+    two: { low: 1.0, high: 1.3 },
   },
-  // Assumes the client's ranges are single-story prices.
-  twoStoryMultiplier: 1.3,
-  // No estimate goes below this, however small the home.
-  minimumPrice: 2500,
+  // Each coverage option's price as a multiple of the front-only price:
+  // the back adds 65% of the front, the sides another 80%.
+  coverageMultiplier: {
+    front: 1,
+    'front-back': 1 + 0.65,
+    full: 1 + 0.65 + 0.8,
+  },
+  // Widest range ever shown: the high end is capped at low + this.
+  maxRange: 2000,
   // Estimates are rounded to the nearest multiple of this.
-  roundTo: 500,
+  roundTo: 100,
 } as const;
 
-export type Coverage = keyof typeof ESTIMATE_PRICING.perSqFt;
+export type Coverage = keyof typeof ESTIMATE_PRICING.coverageMultiplier;
 
 export const COVERAGE_OPTIONS: { value: Coverage; label: string }[] = [
-  { value: 'front', label: 'Front of the house' },
-  { value: 'full', label: 'Full wraparound' },
+  { value: 'front', label: 'Front only' },
+  { value: 'front-back', label: 'Front + back' },
+  { value: 'full', label: 'Front, back + sides' },
 ];
 
 export function isCoverage(value: unknown): value is Coverage {
-  return value === 'front' || value === 'full';
+  return COVERAGE_OPTIONS.some((option) => option.value === value);
 }
 
 // Accepted home sizes; anything outside is almost certainly a typo.
@@ -55,17 +62,17 @@ export function calculateEstimate({
   coverage: Coverage;
   stories: 'single' | 'two';
 }): Estimate {
-  const { perSqFt, twoStoryMultiplier, minimumPrice, roundTo } =
+  const { frontPerSqFt, coverageMultiplier, maxRange, roundTo } =
     ESTIMATE_PRICING;
-  const rate = perSqFt[coverage];
-  const multiplier = stories === 'two' ? twoStoryMultiplier : 1;
+  const rate = frontPerSqFt[stories];
+  const multiplier = coverageMultiplier[coverage];
   const round = (amount: number) => Math.round(amount / roundTo) * roundTo;
 
-  const low = Math.max(minimumPrice, round(squareFeet * rate.low * multiplier));
-  // Always show a real range, even when the minimum price kicks in.
-  const high = Math.max(
-    low + roundTo,
-    round(squareFeet * rate.high * multiplier)
+  const low = round(squareFeet * rate.low * multiplier);
+  const high = Math.min(
+    low + maxRange,
+    // Always a real range, even for very small homes.
+    Math.max(low + roundTo, round(squareFeet * rate.high * multiplier))
   );
   return { low, high };
 }
