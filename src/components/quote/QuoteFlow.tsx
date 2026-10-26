@@ -426,6 +426,7 @@ function QuoteFlowInner({
       {stepId === 'coverage' && (
         <CoverageStep
           defaultValue={answers.coverage}
+          model={answers.stories === 'single' ? 'single' : 'two'}
           questionNumber={questionNumber('coverage')}
           onSelect={handleCoverageSelect}
         />
@@ -444,7 +445,12 @@ function QuoteFlowInner({
           onSelect={handleTimelineSelect}
         />
       )}
-      {loading && <LoadingStep messages={LOADING_MESSAGES[questions]} />}
+      {loading && (
+        <LoadingStep
+          messages={LOADING_MESSAGES[questions]}
+          model={answers.stories === 'single' ? 'single' : 'two'}
+        />
+      )}
       {stepId === 'contact' && (
         // Hidden, not unmounted, while loading, so a failed submit returns
         // to the form with everything still filled in.

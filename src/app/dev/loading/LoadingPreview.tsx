@@ -19,6 +19,7 @@ const MESSAGE_SETS = {
 export default function LoadingPreview() {
   const [run, setRun] = useState(0);
   const [set, setSet] = useState<keyof typeof MESSAGE_SETS>('Instant estimate');
+  const [model, setModel] = useState<'single' | 'two'>('two');
 
   return (
     <main className='mx-auto min-h-screen w-full max-w-md bg-white px-6 pt-6'>
@@ -33,13 +34,30 @@ export default function LoadingPreview() {
                 setRun((r) => r + 1);
               }}
               className={`rounded-full px-3 py-1.5 text-sm font-bold ${
-                set === name ? 'bg-black text-white' : 'bg-black/5 text-black/70'
+                set === name
+                  ? 'bg-black text-white'
+                  : 'bg-black/5 text-black/70'
               }`}
             >
               {name}
             </button>
-          )
+          ),
         )}
+        {(['single', 'two'] as const).map((m) => (
+          <button
+            key={m}
+            type='button'
+            onClick={() => {
+              setModel(m);
+              setRun((r) => r + 1);
+            }}
+            className={`rounded-full px-3 py-1.5 text-sm font-bold ${
+              model === m ? 'bg-black text-white' : 'bg-black/5 text-black/70'
+            }`}
+          >
+            {m === 'single' ? 'Single-story' : 'Two-story'}
+          </button>
+        ))}
         <button
           type='button'
           onClick={() => setRun((r) => r + 1)}
@@ -48,7 +66,7 @@ export default function LoadingPreview() {
           Replay
         </button>
       </div>
-      <LoadingStep key={run} messages={MESSAGE_SETS[set]} />
+      <LoadingStep key={run} messages={MESSAGE_SETS[set]} model={model} />
     </main>
   );
 }
