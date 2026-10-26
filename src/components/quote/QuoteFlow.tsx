@@ -15,6 +15,7 @@ import type { ContactInfo } from './ContactInfoStep';
 import ThankYouStep from './ThankYouStep';
 import EstimateResultStep from './EstimateResultStep';
 import OutOfAreaStep from './OutOfAreaStep';
+import LoadingStep from './LoadingStep';
 import { isZipInServiceArea } from '@/data/serviceAreaZipCodes';
 import { trackMetaEvent } from '@/components/MetaPixel';
 import { answerEvent, FUNNEL_EVENTS, funnelEvent } from '@/lib/funnel';
@@ -26,14 +27,22 @@ import { logFunnelEvent } from '@/lib/funnel-client';
 import { randomId } from '@/lib/uuid';
 import { isTestMode } from '@/lib/testMode';
 
+// How long the loading animation shows at minimum after submitting, so the
+// house finishes drawing and its lights come on even when the request is
+// quick. A slower request keeps it up longer.
+const LOADING_MIN_MS = 4200;
+
+const LOADING_MESSAGES: Record<QuoteQuestions, string[]> = {
+  standard: ['Sending your info…', 'Lining up your lights…', 'Almost there…'],
+  estimator: [
+    'Measuring your roofline…',
+    'Placing your lights…',
+    'Calculating your estimate…',
+  ],
+};
+
 type StepId =
-  | 'zip'
-  | 'stories'
-  | 'coverage'
-  | 'sqft'
-  | 'timeline'
-  | 'contact'
-  | 'done';
+  'zip' | 'stories' | 'coverage' | 'sqft' | 'timeline' | 'contact' | 'done';
 
 // The order of steps for each kind of quote. Every entry but the last is a
 // question; 'done' is the closing screen (thank-you, or the estimate). The
@@ -71,7 +80,7 @@ type QuoteAnswers = {
 
 function stepFromSearchParams(
   searchParams: URLSearchParams,
-  lastStep: number
+  lastStep: number,
 ): Step {
   const raw = searchParams.get('step');
   if (raw === 'out-of-area') return 'out-of-area';
@@ -116,7 +125,7 @@ function reportSubmitFailure(details: {
     if (navigator.sendBeacon) {
       navigator.sendBeacon(
         '/api/quote/client-error',
-        new Blob([payload], { type: 'application/json' })
+        new Blob([payload], { type: 'application/json' }),
       );
     } else {
       fetch('/api/quote/client-error', {
@@ -180,6 +189,13 @@ function QuoteFlowInner({
   // range shown always matches the one sent to GHL.
   const [estimate, setEstimate] = useState<Estimate | null>(null);
 
+  // True from submitting the contact form until the closing screen shows.
+  const [loading, setLoading] = useState(false);
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- clears once the step has actually changed
+    if (stepId !== 'contact') setLoading(false);
+  }, [stepId]);
+
   // ?test=1: run the whole flow without sending anything to GHL or Meta.
   const [testMode, setTestMode] = useState(false);
   useEffect(() => {
@@ -216,7 +232,7 @@ function QuoteFlowInner({
           observer.disconnect();
         }
       },
-      { threshold: 0.3 }
+      { threshold: 0.3 },
     );
     observer.observe(card);
     return () => observer.disconnect();
@@ -296,7 +312,22 @@ function QuoteFlowInner({
   const handleContactSubmit = async (contact: ContactInfo) => {
     // The contact step lets them fix a typo'd zip, so its zip wins.
     setAnswers((prev) => ({ ...prev, zip: contact.zip, contact }));
+    setLoading(true);
+    const minimumLoading = new Promise((resolve) =>
+      setTimeout(resolve, LOADING_MIN_MS),
+    );
+    try {
+      await submitLead(contact);
+      await minimumLoading;
+      goToStepAfter('contact');
+    } catch (error) {
+      // Back to the form, which shows the error and lets them retry.
+      setLoading(false);
+      throw error;
+    }
+  };
 
+  const submitLead = async (contact: ContactInfo) => {
     // Shared by the browser Pixel and the server-side Conversions API event
     // so Meta counts the lead once.
     const eventId = randomId();
@@ -366,8 +397,6 @@ function QuoteFlowInner({
     } catch {
       // Ignore — tracking is best-effort.
     }
-
-    goToStepAfter('contact');
   };
 
   const steps = (
@@ -415,16 +444,23 @@ function QuoteFlowInner({
           onSelect={handleTimelineSelect}
         />
       )}
+      {loading && <LoadingStep messages={LOADING_MESSAGES[questions]} />}
       {stepId === 'contact' && (
-        <ContactInfoStep
-          defaultValue={answers.contact ?? undefined}
-          zip={answers.zip}
-          questionNumber={questionNumber('contact')}
-          submitLabel={
-            questions === 'estimator' ? 'See my estimate' : 'Get my free quote'
-          }
-          onSubmit={handleContactSubmit}
-        />
+        // Hidden, not unmounted, while loading, so a failed submit returns
+        // to the form with everything still filled in.
+        <div hidden={loading}>
+          <ContactInfoStep
+            defaultValue={answers.contact ?? undefined}
+            zip={answers.zip}
+            questionNumber={questionNumber('contact')}
+            submitLabel={
+              questions === 'estimator'
+                ? 'See my estimate'
+                : 'Get my free quote'
+            }
+            onSubmit={handleContactSubmit}
+          />
+        </div>
       )}
       {stepId === 'done' &&
         (questions === 'estimator' ? (
@@ -453,7 +489,10 @@ function QuoteFlowInner({
           </div>
         ) : (
           <main className='mx-auto min-h-screen w-full max-w-md bg-white px-6 pt-4'>
-            <QuoteHeader progressPercent={progressPercent} homeHref={homeHref} />
+            <QuoteHeader
+              progressPercent={progressPercent}
+              homeHref={homeHref}
+            />
             {steps}
           </main>
         )}

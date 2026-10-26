@@ -50,3 +50,40 @@ body {
     transform: translate3d(var(--drift, 0px), 110vh, 0);
   }
 }
+
+/* Quote-submit loading screen (LoadingStep): each roofline light pops on and
+   keeps twinkling. Outside @theme for the same reason as snowfall: they're
+   referenced from inline styles. */
+@keyframes light-on {
+  0% {
+    opacity: 0;
+    transform: scale(0.2);
+  }
+  70% {
+    opacity: 1;
+    transform: scale(1.35);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+@keyframes light-twinkle {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.45;
+  }
+}
+@keyframes loading-text {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
