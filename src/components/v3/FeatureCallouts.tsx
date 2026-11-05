@@ -9,6 +9,15 @@ const STAGE_W = 402;
 const STAGE_H = 906;
 const pct = (value: number, of: number) => `${(value / of) * 100}%`;
 
+// Order the callouts animate in once the photo scrolls into view: top to
+// bottom, a beat apart.
+const APPEAR_ORDER = ['peaks', 'leds', 'wires'];
+const APPEAR_STAGGER = 0.35; // seconds between callouts
+// With reduced motion the callouts are simply there (overrides the inline
+// animation styles).
+const NO_MOTION =
+  'motion-reduce:!transform-none motion-reduce:!opacity-100 motion-reduce:!transition-none';
+
 // Each callout's blue dot (top-left of its 28px ring), from the design.
 const DOTS: Record<string, { x: number; y: number }> = {
   peaks: { x: 176, y: 270 },
@@ -20,13 +29,45 @@ const DOTS: Record<string, { x: number; y: number }> = {
  * The three callouts on the /v3 "3 things that make our lights unique"
  * photo. Each blue dot pulses to show it can be tapped; tapping a dot (or
  * its label) opens a card under it with more about that feature. The card
- * closes with its ×, a tap anywhere else on the photo, or Escape.
+ * closes with its ×, a tap anywhere else on the photo, or Escape. The
+ * callouts pop in one after another when the photo scrolls into view.
  */
 export default function FeatureCallouts() {
   const [openId, setOpenId] = useState<string | null>(null);
   const baseId = useId();
   const closeRef = useRef<HTMLButtonElement>(null);
   const open = V3_FEATURES.find((f) => f.id === openId);
+  const rootRef = useRef<HTMLDivElement>(null);
+  const [shown, setShown] = useState(false);
+
+  // Reveal the callouts once a good part of the photo is on screen.
+  useEffect(() => {
+    const el = rootRef.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setShown(true);
+          observer.disconnect();
+        }
+      },
+      { threshold: 0.35 },
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
+  // Fades a callout up into place with a little overshoot, growing from
+  // its dot (`origin`).
+  const appear = (id: string, origin: string): React.CSSProperties => {
+    const delay = APPEAR_ORDER.indexOf(id) * APPEAR_STAGGER;
+    return {
+      opacity: shown ? 1 : 0,
+      transform: shown ? 'none' : 'translateY(14px) scale(0.6)',
+      transformOrigin: origin,
+      transition: `opacity 0.45s ease-out ${delay}s, transform 0.65s cubic-bezier(0.34, 1.56, 0.64, 1) ${delay}s`,
+    };
+  };
 
   useEffect(() => {
     if (!openId) return;
@@ -41,7 +82,7 @@ export default function FeatureCallouts() {
   const toggle = (id: string) => setOpenId((cur) => (cur === id ? null : id));
 
   return (
-    <div className='absolute inset-0'>
+    <div ref={rootRef} className='absolute inset-0'>
       {/* Lights at the peaks / No visible wires: line down-left, label right */}
       {(['peaks', 'wires'] as const).map((id) => {
         const { x, y } = DOTS[id];
@@ -51,53 +92,63 @@ export default function FeatureCallouts() {
             className='absolute'
             style={{ left: pct(x, STAGE_W), top: pct(y, STAGE_H) }}
           >
-            <div className='absolute top-[20px] left-[-8px] h-[29px] w-[15px]'>
-              <div className='absolute inset-[-3.45%_-6.67%]'>
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  alt=''
-                  src='/images/v3/vector12.svg'
-                  className='block size-full max-w-none'
-                />
+            <div
+              className={`absolute top-0 left-0 ${NO_MOTION}`}
+              style={appear(id, '14px 14px')}
+            >
+              <div className='absolute top-[20px] left-[-8px] h-[29px] w-[15px]'>
+                <div className='absolute inset-[-3.45%_-6.67%]'>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    alt=''
+                    src='/images/v3/vector12.svg'
+                    className='block size-full max-w-none'
+                  />
+                </div>
               </div>
+              <Dot />
+              <p className='font-v3-condensed absolute top-[-2px] left-[39px] w-[90px] text-[20px] leading-5 font-bold'>
+                {V3_FEATURES.find((f) => f.id === id)?.label}
+              </p>
             </div>
-            <Dot />
-            <p className='font-v3-condensed absolute top-[-2px] left-[39px] w-[90px] text-[20px] leading-5 font-bold'>
-              {V3_FEATURES.find((f) => f.id === id)?.label}
-            </p>
           </div>
         );
       })}
 
       {/* Highest grade LEDs: points down-right, label on the left */}
       <div
-        className='absolute'
-        style={{
-          left: pct(DOTS.leds.x, STAGE_W),
-          top: pct(DOTS.leds.y, STAGE_H),
-        }}
+        className={`absolute inset-0 ${NO_MOTION}`}
+        style={appear('leds', `${pct(126, STAGE_W)} ${pct(365, STAGE_H)}`)}
       >
-        <Pulse />
-      </div>
-      <p
-        className='font-v3-condensed absolute w-[90px] text-right text-[20px] leading-5 font-bold'
-        style={{ left: pct(11, STAGE_W), top: pct(352, STAGE_H) }}
-      >
-        Highest grade LEDs
-      </p>
-      <div
-        className='absolute flex h-[60.791px] w-[57.647px] items-center justify-center'
-        style={{ left: pct(95, STAGE_W), top: pct(346, STAGE_H) }}
-      >
-        <div className='flex-none rotate-[-144.85deg] -scale-y-100'>
-          <div className='relative h-[49px] w-[36px]'>
-            <div className='absolute inset-[0_0_-2.04%_-2.78%]'>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                alt=''
-                src='/images/v3/group32.svg'
-                className='block size-full max-w-none'
-              />
+        <div
+          className='absolute'
+          style={{
+            left: pct(DOTS.leds.x, STAGE_W),
+            top: pct(DOTS.leds.y, STAGE_H),
+          }}
+        >
+          <Pulse />
+        </div>
+        <p
+          className='font-v3-condensed absolute w-[90px] text-right text-[20px] leading-5 font-bold'
+          style={{ left: pct(11, STAGE_W), top: pct(352, STAGE_H) }}
+        >
+          Highest grade LEDs
+        </p>
+        <div
+          className='absolute flex h-[60.791px] w-[57.647px] items-center justify-center'
+          style={{ left: pct(95, STAGE_W), top: pct(346, STAGE_H) }}
+        >
+          <div className='flex-none rotate-[-144.85deg] -scale-y-100'>
+            <div className='relative h-[49px] w-[36px]'>
+              <div className='absolute inset-[0_0_-2.04%_-2.78%]'>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  alt=''
+                  src='/images/v3/group32.svg'
+                  className='block size-full max-w-none'
+                />
+              </div>
             </div>
           </div>
         </div>

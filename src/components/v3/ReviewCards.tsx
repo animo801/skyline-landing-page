@@ -1,7 +1,12 @@
 'use client';
 
 import { useState } from 'react';
-import { REVIEWS } from '@/data/reviews';
+import Image from 'next/image';
+import { GOOGLE_REVIEWS_URL, V3_REVIEWS as REVIEWS } from '@/data/v3Content';
+
+// public/images/reviews/v3/<first-last>.webp
+const avatarFor = (name: string) =>
+  `/images/reviews/v3/${name.toLowerCase().replace(/[^a-z]+/g, '-')}.webp`;
 
 /**
  * Swipeable row of real Google review cards for /v3. Long reviews are
@@ -23,7 +28,7 @@ export default function ReviewCards() {
               5-star Google review
             </p>
             <blockquote
-              className={`mt-[5px] text-[18px] leading-7 text-black ${isOpen ? '' : 'line-clamp-7'}`}
+              className={`mt-[5px] text-[18px] leading-7 whitespace-pre-line text-black ${isOpen ? '' : 'line-clamp-7'}`}
             >
               &ldquo;{review.text}&rdquo;
             </blockquote>
@@ -37,16 +42,25 @@ export default function ReviewCards() {
               </button>
             )}
             <div className='mt-auto flex items-center gap-3 pt-6'>
-              <span
-                aria-hidden='true'
-                className='flex size-12 shrink-0 items-center justify-center rounded-full bg-[#d9d9d9] text-lg font-bold text-black/50'
-              >
-                {review.name.charAt(0)}
-              </span>
+              <Image
+                src={avatarFor(review.name)}
+                alt=''
+                width={48}
+                height={48}
+                className='size-12 shrink-0 rounded-full bg-[#d9d9d9] object-cover'
+              />
               <p className='text-[16px] leading-7 font-bold text-black'>
                 {review.name}
               </p>
             </div>
+            <a
+              href={GOOGLE_REVIEWS_URL}
+              target='_blank'
+              rel='noopener noreferrer'
+              className='mt-4 self-start text-[14px] leading-5 font-bold text-black/60 underline underline-offset-2 hover:text-black'
+            >
+              Read on Google
+            </a>
           </li>
         );
       })}
