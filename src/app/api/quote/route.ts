@@ -39,6 +39,7 @@ function timelineLabel(timeline: string): string | null {
 
 function landingPageLabel(funnel: unknown): string {
   if (funnel === 'virtual-quote') return 'Virtual Quote';
+  if (funnel === 'v3') return 'V3';
   const variant = Object.values(VARIANTS).find((v) => v.funnel === funnel);
   return variant?.label ?? 'unknown';
 }

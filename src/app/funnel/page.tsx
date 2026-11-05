@@ -141,6 +141,16 @@ const PAGES = [
       { estimator: true }
     ),
   },
+  {
+    key: 'v3',
+    path: '/v3',
+    description: 'V3 design (standalone)',
+    stages: buildStages('v3', {
+      landed: 'Landed on /v3',
+      cta: 'Clicked “Get your free quote”',
+      started: 'Saw the zip question',
+    }),
+  },
 ];
 
 // Builds a /funnel link, keeping only the params that are set.

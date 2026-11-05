@@ -87,3 +87,33 @@ body {
     transform: translateY(0);
   }
 }
+
+/* /v3 headings use Helvetica Neue Condensed (Black / Bold), per the Figma
+   design. Apple devices have it built in, so it's loaded from the device;
+   everywhere else the stack falls back to Archivo at a condensed width
+   (loaded by the /v3 page as --font-v3-fallback). */
+@font-face {
+  font-family: 'Skyline Condensed';
+  font-weight: 900;
+  src:
+    local('HelveticaNeue-CondensedBlack'),
+    local('Helvetica Neue Condensed Black');
+}
+@font-face {
+  font-family: 'Skyline Condensed';
+  font-weight: 700;
+  src:
+    local('HelveticaNeue-CondensedBold'),
+    local('Helvetica Neue Condensed Bold');
+}
+
+.font-v3 {
+  font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+}
+.font-v3-condensed {
+  font-family:
+    'Skyline Condensed', var(--font-v3-fallback), 'Arial Narrow', sans-serif;
+  /* Only narrows the Archivo fallback; the Helvetica faces are already
+     condensed. */
+  font-stretch: 72%;
+}

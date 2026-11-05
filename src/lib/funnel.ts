@@ -23,7 +23,7 @@ export const FUNNEL_EVENTS = {
 // Each landing page has its own funnel. The original page ('home') uses the
 // bare event names (so its existing history keeps counting); other pages
 // prefix them, e.g. `v2:landed`, so /funnel can show them side by side.
-export const FUNNELS = ['home', 'v2', 'virtual-quote'] as const;
+export const FUNNELS = ['home', 'v2', 'virtual-quote', 'v3'] as const;
 export type FunnelId = (typeof FUNNELS)[number];
 
 export function funnelEvent(funnel: FunnelId, eventName: string) {
