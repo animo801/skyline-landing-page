@@ -1,3 +1,15 @@
+import type { Icon } from '@phosphor-icons/react';
+import {
+  CalendarStar,
+  Coins,
+  HouseLine,
+  Ladder,
+  Lightbulb,
+  Package,
+  Receipt,
+  ShieldCheck,
+} from '@phosphor-icons/react/ssr';
+
 // Content for the /v3 landing page.
 
 // The hero's auto-scrolling strip of installs: 5 different Skyline homes.
@@ -47,16 +59,17 @@ export const V3_APP_VIDEO: {
   poster: '/videos/app-bg-poster.webp',
 };
 
-// "8 reasons" grid. `size` matches each label's font size in the design.
-export const V3_REASONS: { label: string; size: 19 | 20 }[] = [
-  { label: '#1: No more install bills', size: 19 },
-  { label: '#2: Use them for other seasons', size: 19 },
-  { label: '#3: Use them as accent lights', size: 19 },
-  { label: '#4: No storage fees', size: 20 },
-  { label: '#5: Lifetime warranty', size: 20 },
-  { label: '#6: No more falling off roofs', size: 20 },
-  { label: '#7: Brighter lights', size: 20 },
-  { label: '#8: No storing lights', size: 20 },
+// "8 reasons" grid. `size` matches each label's font size in the design;
+// `icon` is a Phosphor icon (phosphoricons.com), drawn in the bold weight.
+export const V3_REASONS: { label: string; size: 19 | 20; icon: Icon }[] = [
+  { label: '#1: No more install bills', size: 19, icon: Receipt },
+  { label: '#2: Use them for other seasons', size: 19, icon: CalendarStar },
+  { label: '#3: Use them as accent lights', size: 19, icon: HouseLine },
+  { label: '#4: No storage fees', size: 20, icon: Coins },
+  { label: '#5: Lifetime warranty', size: 20, icon: ShieldCheck },
+  { label: '#6: No more falling off roofs', size: 20, icon: Ladder },
+  { label: '#7: Brighter lights', size: 20, icon: Lightbulb },
+  { label: '#8: No storing lights', size: 20, icon: Package },
 ];
 
 // The "3 things that make our lights unique" callouts on the photo. Tapping

@@ -207,14 +207,14 @@ export default function LandingPageV3() {
       </section>
 
       {/* 8 reasons */}
-      <section className='bg-skyline-blue pt-16 pb-16 text-white'>
+      <section className='bg-[#f3f4f6] pt-16 pb-16 text-[#111]'>
         <div className={column}>
           <h2 className='font-v3-condensed text-[36px] leading-7 font-black'>
             8 reasons why Permanent Christmas Lights are{' '}
             <span className='relative inline-block'>
               <span
                 aria-hidden='true'
-                className='absolute -inset-x-[3px] bottom-0 -z-0 h-[21px] bg-[#01157d]'
+                className='absolute -inset-x-[3px] bottom-0 -z-0 h-[21px] bg-skyline-highlight'
               />
               <span className='relative'>better</span>
             </span>
@@ -223,13 +223,44 @@ export default function LandingPageV3() {
             {V3_REASONS.map((reason) => (
               <li
                 key={reason.label}
-                className='font-v3-condensed flex h-[142px] items-end bg-[#111]/20 px-3 pb-4 leading-5 font-black'
+                className='font-v3-condensed flex h-[142px] flex-col justify-end gap-2.5 bg-white px-3 pb-4 leading-5 font-black'
                 style={{ fontSize: reason.size }}
               >
+                <reason.icon
+                  size={36}
+                  weight='bold'
+                  aria-hidden='true'
+                  className='shrink-0 text-skyline-blue'
+                />
                 {reason.label}
               </li>
             ))}
           </ul>
+        </div>
+      </section>
+
+      {/* Closing call to action */}
+      <section className='bg-skyline-blue py-16 text-white'>
+        <div className={column}>
+          <h2 className='font-v3-condensed text-[38px] leading-[34px] font-black'>
+            Ready for lights you&rsquo;ll{' '}
+            <span className='-ml-1 inline-block bg-skyline-navy pl-1 leading-[30px] shadow-[6px_0_0_var(--color-skyline-navy)]'>
+              never hang
+            </span>{' '}
+            again?
+          </h2>
+          <p className='mt-3 max-w-[319px] text-[20px] leading-6'>
+            In around 10 minutes, our team will call you to discuss options
+            and see if we&rsquo;re a good fit.
+          </p>
+          {/* data-cta lets FunnelTracker log clicks on this button. */}
+          <Link
+            href='/v3/quote'
+            data-cta='quote'
+            className='mt-6 flex h-14 items-center justify-center bg-skyline-navy text-[20px] leading-[30px] font-bold transition-colors hover:bg-[#0a1d7a]'
+          >
+            Get your free quote
+          </Link>
         </div>
       </section>
     </main>
