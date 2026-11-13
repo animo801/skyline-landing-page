@@ -98,52 +98,6 @@ export default function LandingPageV3() {
         </div>
       </section>
 
-      {/* Skyline's "If It Breaks, We Fix It" Guarantee */}
-      <section className='bg-[#0b2c78] text-white'>
-        <div className='relative mx-auto aspect-[401/1052] w-full max-w-[480px] overflow-hidden'>
-          <GuaranteeParallax />
-          <div className='relative px-6 pt-20'>
-            <h2>
-              <span className='block text-[28px] leading-[30px] font-bold opacity-60'>
-                Skyline&rsquo;s
-              </span>
-              <span className='sr-only'>
-                &ldquo;If It Breaks, We Fix It&rdquo; Guarantee
-              </span>
-              <span
-                aria-hidden='true'
-                className='relative mt-[7px] block h-[113px] w-[345px] max-w-full'
-              >
-                <span className='absolute top-0 left-0 h-[92.893px] w-[344.791px]'>
-                  <span className='absolute inset-[-1.22%_-0.29%_-1.08%_-0.38%]'>
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      alt=''
-                      src='/images/v3/if-it-breaks.svg'
-                      className='block size-full max-w-none'
-                    />
-                  </span>
-                </span>
-                <span className='absolute top-[98.53px] left-[158.58px] h-[20.916px] w-[137.595px]'>
-                  <span className='absolute inset-[-2.39%_-0.36%]'>
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      alt=''
-                      src='/images/v3/guarantee-word.svg'
-                      className='block size-full max-w-none'
-                    />
-                  </span>
-                </span>
-              </span>
-            </h2>
-            <p className='mt-6 max-w-[354px] text-[20px] leading-[30px]'>
-              Very simple. If something breaks on your lights, we will come out
-              and fix it. No questions asked. Best guarantee in the state.
-            </p>
-          </div>
-        </div>
-      </section>
-
       {/* Dedicated app: video background with the heading over it */}
       <section className='bg-[#030411] text-white'>
         <div className='relative mx-auto aspect-[402/852] w-full max-w-[480px] overflow-hidden'>
@@ -236,6 +190,52 @@ export default function LandingPageV3() {
               </li>
             ))}
           </ul>
+        </div>
+      </section>
+
+      {/* Skyline's "If It Breaks, We Fix It" Guarantee */}
+      <section className='bg-[#0b2c78] text-white'>
+        <div className='relative mx-auto aspect-[401/1052] w-full max-w-[480px] overflow-hidden'>
+          <GuaranteeParallax />
+          <div className='relative px-6 pt-20'>
+            <h2>
+              <span className='block text-[28px] leading-[30px] font-bold opacity-60'>
+                Skyline&rsquo;s
+              </span>
+              <span className='sr-only'>
+                &ldquo;If It Breaks, We Fix It&rdquo; Guarantee
+              </span>
+              <span
+                aria-hidden='true'
+                className='relative mt-[7px] block h-[113px] w-[345px] max-w-full'
+              >
+                <span className='absolute top-0 left-0 h-[92.893px] w-[344.791px]'>
+                  <span className='absolute inset-[-1.22%_-0.29%_-1.08%_-0.38%]'>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      alt=''
+                      src='/images/v3/if-it-breaks.svg'
+                      className='block size-full max-w-none'
+                    />
+                  </span>
+                </span>
+                <span className='absolute top-[98.53px] left-[158.58px] h-[20.916px] w-[137.595px]'>
+                  <span className='absolute inset-[-2.39%_-0.36%]'>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      alt=''
+                      src='/images/v3/guarantee-word.svg'
+                      className='block size-full max-w-none'
+                    />
+                  </span>
+                </span>
+              </span>
+            </h2>
+            <p className='mt-6 max-w-[354px] text-[20px] leading-[30px]'>
+              Very simple. If something breaks on your lights, we will come out
+              and fix it. No questions asked. Best guarantee in the state.
+            </p>
+          </div>
         </div>
       </section>
 

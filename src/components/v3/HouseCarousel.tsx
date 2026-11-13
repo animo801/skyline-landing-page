@@ -12,7 +12,7 @@ export default function HouseCarousel() {
 
   return (
     <div className='overflow-hidden motion-reduce:overflow-x-auto'>
-      <ul className='flex w-max animate-[marquee_150s_linear_infinite] motion-reduce:animate-none'>
+      <ul className='flex w-max animate-[marquee_130s_linear_infinite] motion-reduce:animate-none'>
         {photos.map((photo, i) => (
           <li
             key={i}
